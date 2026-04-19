@@ -1,0 +1,211 @@
+/* AdminInstructorDetail.css */
+.aid-page {
+  animation: ad-fadeUp 0.35s ease both;
+}
+
+/* ── Back ── */
+.aid-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ad-text-sub);
+  cursor: pointer;
+  margin-bottom: 28px;
+  transition: var(--ad-transition);
+  font-family: var(--ad-font-body);
+}
+.aid-back-btn:hover {
+  border-color: var(--ad-gold-border);
+  color: var(--ad-gold-dark);
+  background: var(--ad-gold-tint);
+}
+
+/* ── Hero card ── */
+.aid-hero {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-xl);
+  padding: 36px 40px;
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  box-shadow: var(--ad-shadow-sm);
+}
+
+.aid-hero-left {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+/* Avatar */
+.aid-avatar-wrap { position: relative; flex-shrink: 0; }
+.aid-avatar-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--ad-gold-border);
+}
+.aid-avatar-fallback {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ad-gold), var(--ad-gold-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #fff;
+  border: 3px solid var(--ad-gold-border);
+}
+.aid-status-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 2px solid var(--ad-surface);
+}
+.aid-status--active   { background: #d4f0e1; color: #22783c; }
+.aid-status--inactive { background: #fde8e6; color: #c0392b; }
+.aid-status--pending  { background: #fdf3dc; color: #8a7235; }
+
+/* Hero info */
+.aid-hero-info { flex: 1; }
+.aid-name {
+  font-family: var(--ad-font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ad-text);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.aid-specialty { font-size: 14px; color: var(--ad-gold-dark); font-weight: 500; margin: 0 0 4px; }
+.aid-studio    { font-size: 13px; color: var(--ad-muted); margin: 0 0 14px; }
+
+.aid-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.aid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ad-text-sub);
+  background: var(--ad-surface3);
+  border: 1px solid var(--ad-border-soft);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+/* Hero right — contact/links */
+.aid-hero-right {
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 1px solid var(--ad-border-soft);
+  padding-left: 40px;
+}
+
+.aid-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.aid-info-icon { color: var(--ad-gold); flex-shrink: 0; }
+.aid-info-label {
+  color: var(--ad-muted);
+  min-width: 72px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.aid-info-value { color: var(--ad-text); }
+.aid-info-link  { color: var(--ad-gold-dark); text-decoration: none; font-weight: 600; }
+.aid-info-link:hover { color: var(--ad-gold); text-decoration: underline; }
+
+/* ── Bio ── */
+.aid-bio-card {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: var(--ad-shadow-sm);
+}
+.aid-section-title {
+  font-family: var(--ad-font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ad-text);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.aid-courses-count {
+  font-size: 12px;
+  background: var(--ad-gold-tint2);
+  color: var(--ad-gold-dark);
+  font-family: var(--ad-font-body);
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+.aid-bio-text { font-size: 14px; color: var(--ad-text-sub); line-height: 1.7; margin: 0; }
+
+/* ── Courses ── */
+.aid-courses-section { /* no extra bg; grid handles it */ }
+.aid-courses-header  { margin-bottom: 16px; }
+.aid-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1.1rem;
+}
+
+.aid-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ad-muted);
+  font-size: 14px;
+  padding: 2rem 0;
+}
+.aid-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 4rem 0;
+  color: var(--ad-muted);
+  border: 1.5px dashed var(--ad-border);
+  border-radius: var(--ad-radius-lg);
+  font-size: 14px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .aid-hero { flex-direction: column; gap: 24px; }
+  .aid-hero-right { border-left: none; border-top: 1px solid var(--ad-border-soft); padding-left: 0; padding-top: 20px; min-width: unset; }
+}
+@media (max-width: 640px) {
+  .aid-hero { padding: 20px; }
+  .aid-hero-left { flex-direction: column; }
+}

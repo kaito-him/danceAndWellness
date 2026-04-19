@@ -1,0 +1,121 @@
+package com.example.demo.services;
+
+import com.example.demo.dto.InstructorSignupRequest;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.LoginResponse;
+import com.example.demo.dto.SignupRequest;
+import com.example.demo.entities.AccountStatus;
+import com.example.demo.entities.Instructor;
+import com.example.demo.entities.Student;
+import com.example.demo.entities.User;
+import com.example.demo.exceptions.AccountStatusException;
+import com.example.demo.repositories.InstructorRepository;
+import com.example.demo.repositories.StudentRepository;
+import com.example.demo.repositories.UserRepository;
+import com.example.demo.security.JwtUtil;
+import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private StudentRepository studentRepository;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private InstructorRepository instructorRepository;
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    // registerInstructor
+    public void registerInstructor(InstructorSignupRequest req, MultipartFile certFile)
+            throws Exception {
+
+        if (userRepository.findByUsername(req.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already taken.");
+        }
+        if (userRepository.findByEmail(req.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already registered.");
+        }
+
+        // Persist User
+        User user = new User(req.getUsername(), req.getEmail(),
+                passwordEncoder.encode(req.getPassword()));
+        user.setRole("INSTRUCTOR");
+        user.setStatus(AccountStatus.PENDING);
+        userRepository.save(user);
+
+        // Store certification file in GridFS
+        String certFileId = fileStorageService.store(certFile);
+
+        // Persist Instructor profile
+        Instructor instructor = Instructor.builder()
+                .userId(user.getUserId())
+                .yearsOfExperience(req.getYearsOfExperience())
+                .specialization(req.getSpecialization())
+                .studioName(req.getStudioName())
+                .bio(req.getBio())
+                .linkedIn(req.getLinkedIn())
+                .website(req.getWebsite())
+                .certificationFileName(certFile.getOriginalFilename())
+                .certificationFileType(certFile.getContentType())
+                .certificationFileId(certFileId)
+                .featured(false)
+                .build();
+
+        instructorRepository.save(instructor);
+        emailService.sendInstructorWelcomeEmail(user.getEmail(), user.getUsername());
+    }
+
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    public LoginResponse login(LoginRequest req) {
+        User user = userRepository.findByUsername(req.getUsername())
+                .orElse(null);
+
+        if (user == null || !encoder.matches(req.getPassword(), user.getPasswordHash()))
+            return new LoginResponse(false, null, null, "Incorrect username or password", null);
+
+        if (user.getStatus() == AccountStatus.INACTIVE) {
+            throw new AccountStatusException("INACTIVE");
+        }
+        if (user.getStatus() == AccountStatus.PENDING) {
+            throw new AccountStatusException("PENDING");
+        }
+
+        user.setLastLoginDate(LocalDateTime.now());
+        userRepository.save(user);
+
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+
+        return new LoginResponse(true, user.getRole(), token, "Login successful", user.getUserId());
+    }
+
+    public void registerStudent(SignupRequest req) {
+        if (userRepository.findByUsername(req.getUsername()).isPresent())
+            throw new IllegalArgumentException("Username already taken.");
+
+        if (userRepository.findByEmail(req.getEmail()).isPresent())
+            throw new IllegalArgumentException("Email already in use.");
+
+        User user = new User(req.getUsername(), req.getEmail(),
+                passwordEncoder.encode(req.getPassword()));
+        user.setRole("STUDENT");
+        user.setStatus(AccountStatus.ACTIVE);
+        User saved = userRepository.save(user);
+
+        studentRepository.save(new Student(saved.getUserId()));
+    }
+}

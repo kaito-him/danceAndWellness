@@ -1,0 +1,10 @@
+content_assist_lru_history=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><history maxLHS\="100" maxRHS\="10"><lhs name\="java.lang.Enum"><rhs name\="jakarta.persistence.GenerationType"/><rhs name\="jakarta.persistence.EnumType"/><rhs name\="com.example.demo.entities.AccountStatus"/></lhs><lhs name\="java.lang.constant.Constable"><rhs name\="jakarta.persistence.GenerationType"/><rhs name\="jakarta.persistence.EnumType"/><rhs name\="com.example.demo.entities.AccountStatus"/></lhs><lhs name\="com.example.demo.entities.AccountStatus"><rhs name\="com.example.demo.entities.AccountStatus"/></lhs><lhs name\="com.example.demo.entities.User"><rhs name\="com.example.demo.entities.Admin"/><rhs name\="com.example.demo.entities.Instructor"/></lhs><lhs name\="com.example.demo.entities.Instructor"><rhs name\="com.example.demo.entities.Instructor"/></lhs><lhs name\="org.springframework.http.HttpStatusCode"><rhs name\="org.springframework.http.HttpStatus"/></lhs><lhs name\="java.lang.Exception"><rhs name\="jakarta.mail.MessagingException"/></lhs><lhs name\="java.lang.Throwable"><rhs name\="jakarta.mail.MessagingException"/></lhs><lhs name\="jakarta.mail.MessagingException"><rhs name\="jakarta.mail.MessagingException"/></lhs></history>
+content_assist_number_of_computers=14
+content_assist_proposals_background=52,57,61
+content_assist_proposals_foreground=238,238,238
+eclipse.preferences.version=1
+org.eclipse.jdt.ui.formatterprofiles.version=23
+spelling_locale_initialized=true
+typefilter_migrated_2=true
+useAnnotationsPrefPage=true
+useQuickDiffPrefPage=true

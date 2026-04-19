@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500&display=swap');
+
+/* ── PAGE SHELL ── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image: url('../assets/Home1.png');
+  background-size: cover;
+  background-position: center;
+}
+
+/* ── CENTERED WRAPPER ── */
+.login-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+/* ── CARD ── */
+.login-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 52px 44px 44px;
+  width: 400px;
+  border-radius: 14px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+/* Gold shimmer top accent */
+.card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #b89c4d, #d4b96a, #b89c4d);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* ── HEADER ── */
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.login-subtitle {
+  color: #888;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+/* ── FORM ── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 12.5px;
+  font-weight: 500;
+  margin-bottom: 7px;
+  color: #444;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.input-group input {
+  padding: 12px 14px;
+  border-radius: 7px;
+  border: 1.5px solid #e0e0e0;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  color: #1a1a1a;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-group input::placeholder {
+  color: #bbb;
+}
+
+.input-group input:focus {
+  border-color: #b89c4d;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(184, 156, 77, 0.12);
+}
+
+/* Red border on inputs when there's an error */
+.input-group input.input-error {
+  border-color: #d94f4f;
+  box-shadow: 0 0 0 3px rgba(217, 79, 79, 0.1);
+}
+
+/* ── ERROR BANNER ── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(217, 79, 79, 0.08);
+  border: 1px solid rgba(217, 79, 79, 0.3);
+  color: #c0392b;
+  font-size: 13.5px;
+  padding: 11px 14px;
+  border-radius: 7px;
+  line-height: 1.4;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.error-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #c0392b;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Forgot password */
+.forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.forgot-link {
+  font-size: 12.5px;
+  color: #b89c4d;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.forgot-link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* ── SUBMIT BUTTON ── */
+.login-button {
+  margin-top: 6px;
+  padding: 13px;
+  border: none;
+  background: #b89c4d;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.3px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.login-button:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── SIGN UP PROMPT ── */
+.signup-prompt {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 13.5px;
+  color: #777;
+}
+
+.signup-link {
+  color: #b89c4d;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.signup-link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}

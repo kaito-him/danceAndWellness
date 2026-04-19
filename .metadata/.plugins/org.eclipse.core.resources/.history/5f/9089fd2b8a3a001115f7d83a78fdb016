@@ -1,0 +1,51 @@
+package com.example.demo.entities;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+
+@Document(collection = "instructors")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Instructor {
+
+    @Id
+    private String id;
+
+    // ── Link to the User document ──────────────────────────────────────────
+    private String userId;
+    
+    @Transient               
+    private String username;
+    @Transient
+    private String email;
+    
+    private String stripeAccountId;
+
+    // ── Professional info (from the signup form) ───────────────────────────
+    private String yearsOfExperience;   // e.g. "3–5 years"
+    private String specialization;      // e.g. "Ballet & Classical"
+    private String studioName;          // optional
+    private String bio;                 // min 50 chars
+
+    // ── Online presence ────────────────────────────────────────────────────
+    private String linkedIn;
+    private String website;
+
+    // ── Certification document ─────────────────────────────────────────────
+    private String certificationFileName;   // original file name
+    private String certificationFileType;   // MIME type
+    private String certificationFileId;  // GridFS ObjectId — replaces raw bytes
+
+    private String photo; // GridFS ObjectId
+    
+    
+    // ── Metadata ───────────────────────────────────────────────────────────
+    private LocalDate appliedAt = LocalDate.now(ZoneId.systemDefault());
+}

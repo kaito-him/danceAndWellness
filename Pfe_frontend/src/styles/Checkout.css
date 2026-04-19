@@ -1,0 +1,151 @@
+/* src/styles/Checkout.css */
+.checkout-root {
+  min-height: 100vh;
+  background: #f4f4f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+.checkout-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.10);
+  padding: 40px 48px;
+  width: 100%;
+  max-width: 540px;
+}
+
+.checkout-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 28px;
+  color: #1a1a2e;
+}
+
+/* ── Summary ── */
+.checkout-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.checkout-thumb {
+  width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #eee;
+  flex-shrink: 0;
+}
+.checkout-summary-info { flex: 1; }
+.checkout-course-cat   { font-size: .75rem; color: #b89c4d; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.checkout-course-title { font-size: 1rem; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+.checkout-course-instructor { font-size: .82rem; color: #666; }
+.checkout-price { font-size: 1.3rem; font-weight: 700; color: #1a1a2e; white-space: nowrap; }
+
+.checkout-divider { height: 1px; background: #eee; margin: 20px 0; }
+
+/* ── Card Element ── */
+.checkout-label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 8px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.checkout-card-wrap {
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fafafa;
+  transition: border-color .2s;
+}
+.checkout-card-wrap:focus-within { border-color: #b89c4d; }
+
+/* ── Pay button ── */
+.checkout-pay-btn {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  background: #b89c4d;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .2s, transform .15s;
+}
+.checkout-pay-btn:hover:not(:disabled) { background: #9e852e; }
+.checkout-pay-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.checkout-secure-note { text-align: center; color: #888; font-size: .78rem; margin-top: 12px; }
+
+/* ── Errors ── */
+.checkout-error { color: #e55353; font-size: .85rem; margin-top: 10px; }
+
+/* ── Back button ── */
+.checkout-back-btn {
+  background: none;
+  border: none;
+  color: #b89c4d;
+  cursor: pointer;
+  font-size: .88rem;
+  padding: 0;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.checkout-back-btn:hover { text-decoration: underline; }
+
+/* ── Spinners ── */
+.checkout-spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+.checkout-spinner-lg {
+  width: 40px; height: 40px;
+  border: 3px solid #ddd;
+  border-top-color: #b89c4d;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-bottom: 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Center helper ── */
+.checkout-center {
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center; gap: 12px;
+}
+
+/* ── Success screen ── */
+.checkout-success-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 48px 40px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.10);
+}
+.checkout-success-icon {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: #4caf50;
+  color: #fff;
+  font-size: 2rem;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
+.checkout-success-box h2 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; }
+.checkout-redirect-note  { font-size: .82rem; color: #888; }

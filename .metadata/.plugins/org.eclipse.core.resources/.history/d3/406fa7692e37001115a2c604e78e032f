@@ -1,0 +1,31 @@
+package com.example.demo.services;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.example.demo.entities.Instructor;
+import com.example.demo.repositories.InstructorRepository;
+
+public class InstructorService {
+	
+    @Autowired private InstructorRepository instructorRepository;
+	
+	public List<Instructor> getBySpecialization(String specialization) {
+	    return instructorRepository.findBySpecializationAndPending(specialization, true);
+	}
+
+	public List<Instructor> getByExperience(String experience) {
+	    return instructorRepository.findByYearsOfExperienceAndPending(experience, true);
+	}
+
+	public List<Instructor> getByUsername(String username) {
+	    List<Instructor> instructors = instructorRepository.findPending();
+
+	    return instructors.stream()
+	            .filter(i -> i.getUsername() != null &&
+	                         i.getUsername().toLowerCase().contains(username.toLowerCase()))
+	            .collect(Collectors.toList());
+	}
+
+}

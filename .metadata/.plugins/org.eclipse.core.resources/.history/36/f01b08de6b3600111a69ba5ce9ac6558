@@ -1,0 +1,19 @@
+package com.example.demo.entities;
+
+public enum Category {
+	// 💃 Dance Styles
+    BALLET,
+    HIP_HOP,
+    
+    // 🧘 Mind & Body Wellness
+    YOGA,
+    MEDITATION,
+
+    // 💪 Fitness & Movement
+    DANCE_FITNESS,        
+    STRETCHING_FLEXIBILITY,
+    
+    // 🌿 Holistic Health
+    INJURY_PREVENTION,
+    MENTAL_WELLNESS,
+}

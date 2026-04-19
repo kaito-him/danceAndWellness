@@ -1,0 +1,104 @@
+/* InstructorCourseCard.css */
+.icc-card {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-md);
+  overflow: hidden;
+  transition: var(--ad-transition);
+  box-shadow: var(--ad-shadow-sm);
+}
+.icc-card:hover {
+  border-color: var(--ad-gold-border);
+  box-shadow: var(--ad-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Thumbnail */
+.icc-thumb {
+  position: relative;
+  height: 140px;
+  background: var(--ad-surface3);
+  overflow: hidden;
+}
+.icc-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.icc-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ad-muted);
+  background: var(--ad-gold-tint);
+}
+.icc-status-pill {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+/* Body */
+.icc-body {
+  padding: 14px 16px 16px;
+}
+.icc-title {
+  font-family: var(--ad-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ad-text);
+  margin: 0 0 10px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.icc-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.icc-level {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.icc-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ad-muted);
+}
+
+.icc-price {
+  margin-top: 4px;
+}
+.icc-price-free {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ad-green);
+}
+.icc-price-paid {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ad-gold-dark);
+}

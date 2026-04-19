@@ -1,0 +1,478 @@
+/* ═══════════════════════════════════════════════
+   AdminCategories.css — uses AdminDashboard --ad-* tokens
+   ═══════════════════════════════════════════════ */
+
+/* ── Page shell ─────────────────────────────── */
+.cat-page {
+    width: 100%;
+    font-family: var(--ad-font-body);
+    color: var(--ad-text);
+    position: relative;
+}
+
+/* ── Header ─────────────────────────────────── */
+.cat-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.cat-title {
+    font-family: var(--ad-font-display);
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--ad-text);
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.cat-title::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 3px;
+    background: var(--ad-gold);
+    border-radius: 2px;
+    margin-top: 8px;
+}
+
+.cat-sub {
+    color: var(--ad-muted);
+    font-size: 14px;
+    margin: 0;
+    margin-top: 14px;
+}
+
+.cat-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--ad-gold);
+    color: #fff;
+    border: none;
+    border-radius: var(--ad-radius-md);
+    padding: 10px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: var(--ad-font-body);
+    cursor: pointer;
+    transition: var(--ad-transition);
+    box-shadow: 0 3px 14px rgba(184, 156, 77, 0.3);
+    white-space: nowrap;
+}
+
+.cat-add-btn:hover {
+    background: var(--ad-gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 18px rgba(184, 156, 77, 0.4);
+}
+
+.cat-add-btn:active {
+    transform: translateY(0);
+}
+
+/* ── Stats bar ──────────────────────────────── */
+.cat-statsbar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.cat-stat {
+    background: var(--ad-surface);
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius-lg);
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    box-shadow: var(--ad-shadow-sm);
+}
+
+.cat-stat-num {
+    font-family: var(--ad-font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ad-gold);
+    line-height: 1;
+}
+
+.cat-stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ad-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ── Grid — 3 per row ─────── */
+.cat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+/* ── Category card ──────────────────────────── */
+.cat-card {
+    background: var(--ad-surface);
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius-lg);
+    overflow: hidden;
+    /* keeps image corners clipped */
+    transition: var(--ad-transition);
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    /* thumb is flush, name gets its own padding */
+}
+
+.cat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--ad-gold), transparent);
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+
+.cat-card:hover {
+    box-shadow: var(--ad-shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--ad-border-soft);
+}
+
+.cat-card:hover::before {
+    opacity: 1;
+}
+
+/* ── Icon wrap ──────────────────────────────── */
+
+.cat-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cat-card:hover .cat-icon-wrap {
+    border-color: var(--ad-gold-border);
+    box-shadow: 0 0 0 5px var(--ad-gold-tint);
+}
+
+.cat-icon-fallback {
+    color: var(--ad-gold);
+    opacity: 0.35;
+}
+
+/* ── Text ────────────────────────────────────── */
+.cat-name {
+    font-family: var(--ad-font-body);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ad-text);
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    padding: 18px 16px;
+    width: 100%;
+    text-align: center;
+    background: var(--ad-surface2);
+}
+
+/* ── Loading / Empty ────────────────────────── */
+.cat-loading,
+.cat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 5rem 20px;
+    color: var(--ad-muted);
+}
+
+.cat-loading p {
+    font-size: 14px;
+}
+
+.cat-empty {
+    border: 1.5px dashed var(--ad-border);
+    border-radius: var(--ad-radius-lg);
+    background: var(--ad-surface);
+}
+
+.cat-empty h2 {
+    font-family: var(--ad-font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ad-text-sub);
+    margin: 0;
+}
+
+.cat-empty p {
+    font-size: 13.5px;
+}
+
+.cat-empty svg {
+    color: var(--ad-gold);
+    opacity: 0.4;
+}
+
+.cat-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--ad-border);
+    border-top-color: var(--ad-gold);
+    border-radius: 50%;
+    animation: ad-spin 0.7s linear infinite;
+}
+
+/* ── Modal overlay ──────────────────────────── */
+.cat-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 16, 8, 0.52);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ad-fadeIn 0.18s ease;
+}
+
+.cat-modal {
+    background: var(--ad-surface);
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius-xl);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--ad-shadow-lg);
+    animation: ad-scaleIn 0.22s cubic-bezier(0.34, 1.42, 0.64, 1);
+}
+
+.cat-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--ad-border-soft);
+}
+
+.cat-modal-header h2 {
+    font-family: var(--ad-font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ad-text);
+    margin: 0;
+}
+
+.cat-modal-close {
+    background: none;
+    border: none;
+    color: var(--ad-muted);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: var(--ad-radius-sm);
+    transition: var(--ad-transition);
+    display: flex;
+    align-items: center;
+}
+
+.cat-modal-close:hover {
+    background: var(--ad-gold-tint);
+    color: var(--ad-gold);
+}
+
+/* ── Upload area ────────────────────────────── */
+.cat-upload-area {
+    margin: 20px 24px 0;
+    border: 1.5px dashed var(--ad-border);
+    border-radius: var(--ad-radius-lg);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--ad-transition);
+    color: var(--ad-muted);
+    font-size: 13px;
+}
+
+.cat-upload-area:hover {
+    border-color: var(--ad-gold-border);
+    background: var(--ad-gold-tint);
+}
+
+.cat-upload-area p {
+    margin: 8px 0 4px;
+    font-weight: 600;
+    color: var(--ad-text-sub);
+    font-size: 13.5px;
+}
+
+.cat-upload-area span {
+    font-size: 12px;
+    color: var(--ad-muted);
+}
+
+.cat-upload-icon {
+    color: var(--ad-gold);
+    margin-bottom: 4px;
+}
+
+.cat-preview-img {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    border-radius: var(--ad-radius-md);
+}
+
+/* ── Form ───────────────────────────────────── */
+.cat-form {
+    padding: 18px 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cat-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cat-field label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ad-muted);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.cat-field input {
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius-md);
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: var(--ad-text);
+    background: var(--ad-surface2);
+    transition: var(--ad-transition);
+    font-family: var(--ad-font-body);
+    outline: none;
+}
+
+.cat-field input:focus {
+    border-color: var(--ad-gold-border);
+    box-shadow: 0 0 0 3px var(--ad-gold-tint);
+    background: var(--ad-surface);
+}
+
+/* ── Modal footer ───────────────────────────── */
+.cat-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 24px 24px;
+}
+
+.cat-btn-cancel {
+    background: var(--ad-surface2);
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius-sm);
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--ad-font-body);
+    color: var(--ad-text-sub);
+    cursor: pointer;
+    transition: var(--ad-transition);
+}
+
+.cat-btn-cancel:hover {
+    background: var(--ad-surface3);
+    border-color: var(--ad-gold-border);
+    color: var(--ad-text);
+}
+
+.cat-btn-submit {
+    background: var(--ad-gold);
+    color: #fff;
+    border: none;
+    border-radius: var(--ad-radius-sm);
+    padding: 9px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--ad-font-body);
+    cursor: pointer;
+    transition: var(--ad-transition);
+    box-shadow: 0 3px 12px rgba(184, 156, 77, 0.3);
+}
+
+.cat-btn-submit:hover:not(:disabled) {
+    background: var(--ad-gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(184, 156, 77, 0.4);
+}
+
+.cat-btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Toast ──────────────────────────────────── */
+.cat-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 18px;
+    border-radius: var(--ad-radius-md);
+    font-size: 14px;
+    font-family: var(--ad-font-body);
+    font-weight: 500;
+    box-shadow: var(--ad-shadow-lg);
+    animation: ad-fadeDown 0.22s ease;
+}
+
+.cat-toast.success {
+    background: #f0faf4;
+    color: var(--ad-green);
+    border: 1px solid #a8dfc0;
+}
+
+.cat-toast.error {
+    background: #fdf3f2;
+    color: var(--ad-red);
+    border: 1px solid #f0b8b2;
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 1100px) {
+    .cat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 800px) {
+    .cat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cat-header {
+        flex-direction: column;
+        gap: 14px;
+    }
+}
+
+@media (max-width: 500px) {
+    .cat-grid {
+        grid-template-columns: 1fr;
+    }
+}

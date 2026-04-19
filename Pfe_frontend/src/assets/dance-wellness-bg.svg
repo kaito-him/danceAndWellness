@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <rect width="1440" height="900" fill="#fdfaf5"/>
+
+  <!-- Soft background arcs -->
+  <circle cx="1240" cy="120" r="520" fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.06"/>
+  <circle cx="1240" cy="120" r="360" fill="none" stroke="#b89c4d" stroke-width="0.8" opacity="0.08"/>
+  <circle cx="1240" cy="120" r="200" fill="none" stroke="#b89c4d" stroke-width="0.6" opacity="0.10"/>
+  <circle cx="180" cy="820" r="400" fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.05"/>
+  <circle cx="180" cy="820" r="250" fill="none" stroke="#b89c4d" stroke-width="0.7" opacity="0.07"/>
+
+  <!-- Dance flow lines — gentle, sweeping -->
+  <path d="M -40,560 C 200,480 420,600 680,520 C 940,440 1160,560 1480,460"
+        fill="none" stroke="#c9a95c" stroke-width="1" opacity="0.18" stroke-linecap="round"/>
+  <path d="M -40,590 C 220,510 440,630 700,548 C 960,466 1180,586 1480,490"
+        fill="none" stroke="#c9a95c" stroke-width="0.6" opacity="0.12" stroke-linecap="round"/>
+  <path d="M -40,640 C 300,560 560,680 840,580 C 1080,490 1300,610 1480,540"
+        fill="none" stroke="#b89c4d" stroke-width="0.8" opacity="0.10" stroke-linecap="round"/>
+
+  <!-- === RIGHT BOTANICAL BRANCH === -->
+  <!-- Main stem -->
+  <path d="M 1420,900 C 1400,780 1350,640 1280,500 C 1210,360 1100,240 960,130"
+        fill="none" stroke="#b89c4d" stroke-width="1.4" opacity="0.45" stroke-linecap="round"/>
+
+  <!-- Secondary branch upper -->
+  <path d="M 1020,190 C 1060,160 1110,148 1150,138"
+        fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+  <path d="M 1010,220 C 980,180 940,155 900,140"
+        fill="none" stroke="#b89c4d" stroke-width="0.9" opacity="0.3" stroke-linecap="round"/>
+
+  <!-- Branch mid-right -->
+  <path d="M 1210,380 C 1260,340 1310,320 1360,316"
+        fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+  <path d="M 1200,420 C 1160,370 1110,340 1060,326"
+        fill="none" stroke="#b89c4d" stroke-width="0.9" opacity="0.3" stroke-linecap="round"/>
+
+  <!-- Branch lower -->
+  <path d="M 1310,580 C 1360,536 1410,514 1460,506"
+        fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.3" stroke-linecap="round"/>
+  <path d="M 1295,620 C 1240,572 1180,548 1120,538"
+        fill="none" stroke="#b89c4d" stroke-width="0.9" opacity="0.28" stroke-linecap="round"/>
+
+  <!-- LEAVES — right botanical (filled, elegant) -->
+  <!-- Leaf at upper branch -->
+  <path d="M 1150,138 C 1170,118 1196,106 1204,110 C 1190,124 1172,136 1150,138 Z"
+        fill="#c9a95c" opacity="0.38"/>
+  <path d="M 1150,138 C 1126,128 1108,114 1112,108 C 1128,116 1142,126 1150,138 Z"
+        fill="#b89c4d" opacity="0.32"/>
+  <path d="M 1150,138 C 1176,114 1202,104 1214,108 C 1196,122 1168,134 1150,138 Z"
+        fill="#d4bc7c" opacity="0.25"/>
+
+  <path d="M 900,140 C 880,120 858,108 852,112 C 866,126 884,136 900,140 Z"
+        fill="#c9a95c" opacity="0.38"/>
+  <path d="M 900,140 C 922,120 942,108 948,112 C 932,126 912,136 900,140 Z"
+        fill="#b89c4d" opacity="0.32"/>
+
+  <!-- Mid-right leaves -->
+  <path d="M 1360,316 C 1384,296 1410,282 1420,288 C 1402,304 1378,314 1360,316 Z"
+        fill="#c9a95c" opacity="0.35"/>
+  <path d="M 1360,316 C 1338,296 1320,282 1316,288 C 1332,304 1350,314 1360,316 Z"
+        fill="#b89c4d" opacity="0.30"/>
+  <path d="M 1060,326 C 1036,306 1018,292 1014,298 C 1030,312 1048,322 1060,326 Z"
+        fill="#c9a95c" opacity="0.35"/>
+  <path d="M 1060,326 C 1082,308 1100,294 1104,300 C 1086,314 1064,324 1060,326 Z"
+        fill="#b89c4d" opacity="0.28"/>
+
+  <!-- Large leaf mid-composition -->
+  <path d="M 1130,440 C 1090,400 1072,360 1082,338 C 1106,370 1126,408 1130,440 Z"
+        fill="#c9a95c" opacity="0.30" transform="rotate(-20,1130,440)"/>
+  <path d="M 1130,440 C 1170,400 1188,358 1176,338 C 1152,370 1132,408 1130,440 Z"
+        fill="#d4bc7c" opacity="0.22" transform="rotate(-20,1130,440)"/>
+
+  <!-- Lower branch leaves -->
+  <path d="M 1460,506 C 1480,486 1500,474 1506,478 C 1492,492 1472,504 1460,506 Z"
+        fill="#c9a95c" opacity="0.30"/>
+  <path d="M 1120,538 C 1098,518 1082,504 1082,510 C 1096,522 1112,534 1120,538 Z"
+        fill="#b89c4d" opacity="0.28"/>
+  <path d="M 1120,538 C 1142,518 1156,504 1154,510 C 1138,522 1122,534 1120,538 Z"
+        fill="#c9a95c" opacity="0.25"/>
+
+  <!-- Small petal / dot tips -->
+  <circle cx="1214" cy="108" r="3.5" fill="#b89c4d" opacity="0.45"/>
+  <circle cx="852"  cy="110" r="3"   fill="#b89c4d" opacity="0.40"/>
+  <circle cx="1420" cy="286" r="3"   fill="#b89c4d" opacity="0.38"/>
+  <circle cx="1014" cy="296" r="2.8" fill="#b89c4d" opacity="0.38"/>
+  <circle cx="1506" cy="476" r="2.5" fill="#b89c4d" opacity="0.32"/>
+  <circle cx="960"  cy="128" r="4"   fill="#c9a95c" opacity="0.50"/>
+
+  <!-- === LEFT ACCENT BOTANICAL === -->
+  <!-- Small branch lower-left -->
+  <path d="M -20,900 C 40,800 100,700 160,620 C 200,560 230,510 248,460"
+        fill="none" stroke="#b89c4d" stroke-width="1.2" opacity="0.30" stroke-linecap="round"/>
+  <path d="M 100,720 C 140,680 180,664 220,660"
+        fill="none" stroke="#b89c4d" stroke-width="0.9" opacity="0.24" stroke-linecap="round"/>
+  <path d="M 140,650 C 100,610 70,584 40,574"
+        fill="none" stroke="#b89c4d" stroke-width="0.8" opacity="0.20" stroke-linecap="round"/>
+  <path d="M 200,560 C 240,520 268,498 298,490"
+        fill="none" stroke="#b89c4d" stroke-width="0.8" opacity="0.22" stroke-linecap="round"/>
+  <path d="M 190,590 C 150,548 118,524 86,514"
+        fill="none" stroke="#b89c4d" stroke-width="0.7" opacity="0.18" stroke-linecap="round"/>
+
+  <!-- Left leaves -->
+  <path d="M 220,660 C 242,640 264,628 272,632 C 256,646 234,658 220,660 Z"
+        fill="#c9a95c" opacity="0.28"/>
+  <path d="M 220,660 C 198,640 182,628 178,634 C 194,646 210,658 220,660 Z"
+        fill="#b89c4d" opacity="0.24"/>
+  <path d="M 40,574 C 20,554 8,538 10,532 C 22,546 36,562 40,574 Z"
+        fill="#c9a95c" opacity="0.26"/>
+  <path d="M 298,490 C 318,470 336,456 342,460 C 326,474 304,488 298,490 Z"
+        fill="#c9a95c" opacity="0.26"/>
+  <path d="M 86,514 C 64,494 50,478 52,472 C 64,488 80,506 86,514 Z"
+        fill="#b89c4d" opacity="0.24"/>
+
+  <circle cx="272" cy="630" r="2.5" fill="#b89c4d" opacity="0.35"/>
+  <circle cx="10"  cy="530" r="2"   fill="#b89c4d" opacity="0.30"/>
+  <circle cx="342" cy="458" r="2"   fill="#b89c4d" opacity="0.30"/>
+  <circle cx="248" cy="458" r="3"   fill="#c9a95c" opacity="0.38"/>
+
+  <!-- === SCATTERED ACCENT DOTS === -->
+  <circle cx="580" cy="180" r="2.5" fill="#b89c4d" opacity="0.20"/>
+  <circle cx="620" cy="210" r="1.8" fill="#b89c4d" opacity="0.15"/>
+  <circle cx="560" cy="230" r="1.5" fill="#c9a95c" opacity="0.15"/>
+  <circle cx="700" cy="160" r="2"   fill="#b89c4d" opacity="0.18"/>
+  <circle cx="740" cy="200" r="1.5" fill="#b89c4d" opacity="0.14"/>
+  <circle cx="800" cy="175" r="2.2" fill="#c9a95c" opacity="0.18"/>
+  <circle cx="820" cy="220" r="1.4" fill="#b89c4d" opacity="0.12"/>
+  <circle cx="500" cy="760" r="2"   fill="#b89c4d" opacity="0.16"/>
+  <circle cx="540" cy="790" r="1.5" fill="#c9a95c" opacity="0.14"/>
+  <circle cx="900" cy="780" r="2"   fill="#b89c4d" opacity="0.14"/>
+  <circle cx="940" cy="760" r="1.5" fill="#b89c4d" opacity="0.12"/>
+  <circle cx="660" cy="800" r="1.8" fill="#c9a95c" opacity="0.14"/>
+
+  <!-- Delicate floating leaf accents — center -->
+  <path d="M 680,300 C 690,282 706,274 710,278 C 700,290 686,298 680,300 Z"
+        fill="#c9a95c" opacity="0.22" transform="rotate(30,680,300)"/>
+  <path d="M 680,300 C 670,282 656,274 654,280 C 664,290 676,298 680,300 Z"
+        fill="#b89c4d" opacity="0.18" transform="rotate(30,680,300)"/>
+  <path d="M 780,260 C 790,244 804,236 808,240 C 798,252 784,260 780,260 Z"
+        fill="#c9a95c" opacity="0.20" transform="rotate(-15,780,260)"/>
+  <path d="M 780,260 C 770,244 758,236 756,242 C 766,252 778,260 780,260 Z"
+        fill="#b89c4d" opacity="0.16" transform="rotate(-15,780,260)"/>
+  <path d="M 480,680 C 490,662 504,654 508,658 C 496,670 482,678 480,680 Z"
+        fill="#c9a95c" opacity="0.22" transform="rotate(45,480,680)"/>
+  <path d="M 480,680 C 470,662 458,654 456,660 C 468,670 478,678 480,680 Z"
+        fill="#b89c4d" opacity="0.18" transform="rotate(45,480,680)"/>
+</svg>

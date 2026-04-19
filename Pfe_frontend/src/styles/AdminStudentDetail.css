@@ -1,0 +1,241 @@
+/* AdminStudentDetail.css - Shared patterns with AdminInstructorDetail */
+.asd-page {
+  animation: aideFadeUp 0.4s ease-out both;
+  padding-bottom: 3rem;
+}
+
+.asd-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--ad-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+}
+
+.asd-back-btn:hover {
+  color: var(--ad-gold);
+  transform: translateX(-4px);
+}
+
+/* Hero Section */
+.asd-hero {
+  background: var(--ad-surface);
+  border: 1.5px solid var(--ad-border);
+  border-radius: 24px;
+  padding: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  box-shadow: var(--ad-shadow-sm);
+  margin-bottom: 2.5rem;
+}
+
+.asd-hero-left {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.asd-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.asd-avatar-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 32px;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.asd-avatar-fallback {
+  width: 120px;
+  height: 120px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, var(--ad-gold-light) 0%, var(--ad-gold) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.asd-status-badge {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  white-space: nowrap;
+}
+
+.asd-status--active { background: #f0faf4; color: #1a7f37; border: 1px solid #a8dfc0; }
+.asd-status--inactive { background: #fff5f5; color: #d73a49; border: 1px solid #feb2b2; }
+
+.asd-hero-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.asd-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--ad-text);
+  margin-bottom: 0.25rem;
+}
+
+.asd-role {
+  font-size: 1rem;
+  color: var(--ad-muted);
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.asd-chips {
+  display: flex;
+  gap: 10px;
+}
+
+.asd-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--ad-bg);
+  border: 1px solid var(--ad-border-soft);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ad-text-sub);
+}
+
+/* Info Rows */
+.asd-hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+}
+
+.asd-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--ad-bg);
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.asd-info-row:hover {
+  background: #fff;
+  border-color: var(--ad-gold-border);
+}
+
+.asd-info-icon {
+  color: var(--ad-gold);
+  display: flex;
+  align-items: center;
+}
+
+.asd-info-label {
+  font-size: 0.8rem;
+  color: var(--ad-muted);
+  font-weight: 600;
+  width: 60px;
+}
+
+.asd-info-value {
+  font-size: 0.9rem;
+  color: var(--ad-text);
+  font-weight: 600;
+}
+
+/* Courses Section */
+.asd-courses-section {
+  margin-top: 3rem;
+}
+
+.asd-section-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ad-text);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.asd-courses-count {
+  font-size: 0.9rem;
+  background: var(--ad-gold-tint);
+  color: var(--ad-gold-dark);
+  padding: 2px 10px;
+  border-radius: 8px;
+}
+
+.asd-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.asd-loading {
+  padding: 4rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--ad-muted);
+}
+
+.asd-empty {
+  background: var(--ad-surface);
+  border: 2px dashed var(--ad-border);
+  border-radius: 20px;
+  padding: 4rem;
+  text-align: center;
+  color: var(--ad-muted);
+}
+
+@keyframes aideFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .asd-hero {
+    flex-direction: column;
+    padding: 1.5rem;
+  }
+  .asd-hero-left {
+    flex-direction: column;
+    text-align: center;
+  }
+  .asd-hero-right {
+    width: 100%;
+  }
+}

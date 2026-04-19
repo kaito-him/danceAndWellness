@@ -1,0 +1,87 @@
+package com.example.demo.config;
+
+import com.example.demo.security.JwtFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(JwtFilter jwtFilter) { this.jwtFilter = jwtFilter; }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+
+                // ── Public ────────────────────────────────────────────────
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/courses/published").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
+                .requestMatchers("/api/auth/register/instructor").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+
+                // ── Files ─────────────────────────────────────────────────
+                .requestMatchers(HttpMethod.POST, "/api/files/upload")
+                    .hasAnyRole("INSTRUCTOR", "ADMIN")
+
+                // ── Admin — 
+                .requestMatchers(HttpMethod.GET,   "/api/admin/applications")
+                    .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/admin/applications/**")
+                    .hasRole("ADMIN")
+                 .requestMatchers(HttpMethod.POST, "/api/categories")
+                    .hasAnyRole("ADMIN")
+
+                // ── Courses ───────────────────────────────────────────────
+                .requestMatchers(HttpMethod.GET,    "/api/courses/pending").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET,    "/api/courses/my-pending").hasRole("INSTRUCTOR")
+                .requestMatchers(HttpMethod.POST,   "/api/courses").hasAnyRole("INSTRUCTOR", "ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/courses/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/courses/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH,  "/api/courses/**").hasRole("ADMIN")
+
+                // ── Notifications ─────────────────────────────────────────
+                .requestMatchers("/api/notifications/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+
+                // ── Payment ───────────────────────────────────────────────
+                .requestMatchers(HttpMethod.GET,  "/api/payment/is-enrolled").authenticated()
+                .requestMatchers("/api/enrollment/**").authenticated()
+
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        var config = new org.springframework.web.cors.CorsConfiguration();
+        config.setAllowedOrigins(java.util.List.of("http://localhost:5173"));
+        config.setAllowedMethods(java.util.List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
+        config.setAllowedHeaders(java.util.List.of("*"));
+        config.setAllowCredentials(true);
+        var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+}

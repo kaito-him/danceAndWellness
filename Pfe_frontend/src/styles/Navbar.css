@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500&display=swap');
+
+/* ── NAVBAR ── */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 60px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(184, 156, 77, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* ── LOGO ── */
+.navbar .logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+  transition: color 0.2s;
+}
+
+.navbar .logo:hover {
+  color: #b89c4d;
+}
+
+/* ── NAV LINKS ── */
+.nav-links {
+  display: flex;
+  gap: 36px;
+  align-items: center;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #555;
+  font-size: 14.5px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.2s;
+}
+
+/* Animated underline — grows from center on hover */
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: #b89c4d;
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.nav-link:hover {
+  color: #b89c4d;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Active state — always underlined with gold */
+.nav-link.active {
+  color: #b89c4d;
+  font-weight: 500;
+}
+
+.nav-link.active::after {
+  width: 100%;
+}
+
+/* ── SIGN IN BUTTON ── */
+.signin-btn {
+  text-decoration: none;
+  border: 1.5px solid #b89c4d;
+  background: transparent;
+  padding: 9px 22px;
+  border-radius: 6px;
+  color: #b89c4d;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  transition: background 0.22s ease, color 0.22s ease, transform 0.15s ease;
+}
+
+.signin-btn:hover {
+  background: #b89c4d;
+  color: #fff;
+  transform: translateY(-1px);
+}

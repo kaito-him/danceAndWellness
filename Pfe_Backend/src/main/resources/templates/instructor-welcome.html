@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { margin: 0; padding: 0; background: #f4f4f7; font-family: 'Segoe UI', Arial, sans-serif; }
+    .wrapper { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px 48px; text-align: center; }
+    .header h1 { margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+    .header p  { margin: 8px 0 0; color: #a0aec0; font-size: 14px; }
+    .body { padding: 40px 48px; }
+    .greeting { font-size: 20px; font-weight: 600; color: #1a1a2e; margin: 0 0 16px; }
+    .text { font-size: 15px; color: #4a5568; line-height: 1.7; margin: 0 0 24px; }
+    .badge { display: inline-block; background: #fff7ed; border: 1px solid #fed7aa; color: #c05621; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px; margin-bottom: 28px; }
+    .steps { background: #f8fafc; border-radius: 8px; padding: 24px 28px; margin-bottom: 28px; }
+    .steps h3 { margin: 0 0 14px; font-size: 14px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.05em; }
+    .step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    .step:last-child { margin-bottom: 0; }
+    .step-num { background: #1a1a2e; color: #fff; font-size: 12px; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 12px; margin-top: 1px; }
+    .step-text { font-size: 14px; color: #4a5568; line-height: 1.5; }
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+    .footer { background: #f8fafc; padding: 24px 48px; text-align: center; }
+    .footer p { margin: 0; font-size: 12px; color: #a0aec0; line-height: 1.6; }
+    .footer a { color: #667eea; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Welcome to Dance&Wellness 🎓</h1>
+      <p>Instructor Application Received</p>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+      <p class="greeting" th:text="'Hi ' + ${username} + '!'">Hi Instructor!</p>
+
+      <p class="text">
+        Thank you for applying to join our instructor community. We're excited to review
+        your application and learn more about what you bring to the platform.
+      </p>
+
+      <span class="badge">⏳ Application Under Review</span>
+
+      <div class="steps">
+        <h3>What happens next?</h3>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Our team reviews your credentials and bio — usually within <strong>3–5 business days</strong>.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">You'll receive an email confirming your approval (or feedback if we need more info).</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Once approved, your account is activated and you can start creating courses.</div>
+        </div>
+      </div>
+
+      <p class="text">
+        In the meantime, feel free to reach out if you have any questions.
+        We'll be in touch soon!
+      </p>
+
+      <hr class="divider" />
+
+      <p class="text" style="margin:0; font-size:14px;">
+        Warm regards,<br/>
+        <strong>The Dance&Wellness Team</strong>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        You received this email because you applied as an instructor on Dance&Wellness.<br/>
+        © 2026 Dance&Wellness. All rights reserved.
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

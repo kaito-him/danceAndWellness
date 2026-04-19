@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to Dance&amp;Wellness</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #f5f0eb;
+      font-family: 'Inter', Arial, sans-serif;
+      color: #2d2d2d;
+    }
+
+    .wrapper {
+      max-width: 620px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #c8a882 0%, #a0785a 60%, #7a5240 100%);
+      padding: 48px 40px 36px;
+      text-align: center;
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      display: block;
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 32px;
+      background: #ffffff;
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: 2px solid rgba(255,255,255,0.45);
+      line-height: 64px;
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+
+    .brand {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .brand span { color: #fde8cc; }
+
+    /* ── Badge ── */
+    .badge-wrap { text-align: center; margin-top: -18px; margin-bottom: 24px; }
+
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #c8a882, #a0785a);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(160,120,90,0.35);
+    }
+
+    /* ── Body ── */
+    .body { padding: 10px 40px 36px; }
+
+    .greeting {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: #2d2d2d;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .greeting em { color: #a0785a; font-style: normal; }
+
+    .divider {
+      width: 48px; height: 3px;
+      background: linear-gradient(90deg, #c8a882, #a0785a);
+      border-radius: 2px;
+      margin-bottom: 20px;
+    }
+
+    p { font-size: 15px; line-height: 1.75; color: #555; margin-bottom: 16px; }
+
+    /* ── Highlight box ── */
+    .highlight-box {
+      background: #fdf8f3;
+      border-left: 4px solid #c8a882;
+      border-radius: 0 10px 10px 0;
+      padding: 18px 22px;
+      margin: 24px 0;
+    }
+
+    .highlight-box p { margin: 0; color: #5a4030; font-weight: 500; font-size: 14px; }
+
+    /* ── Steps ── */
+    .steps { margin: 24px 0; }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c8a882, #a0785a);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 8px rgba(160,120,90,0.30);
+    }
+
+    .step-text { font-size: 14px; color: #555; line-height: 1.6; padding-top: 6px; }
+    .step-text strong { color: #2d2d2d; }
+
+    /* ── CTA ── */
+    .cta-wrap { text-align: center; margin: 32px 0 24px; }
+
+    .cta-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #c8a882 0%, #a0785a 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 36px;
+      border-radius: 50px;
+      letter-spacing: 0.4px;
+      box-shadow: 0 6px 18px rgba(160,120,90,0.38);
+      transition: opacity .2s;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: #2d2d2d;
+      padding: 28px 40px;
+      text-align: center;
+    }
+
+    .footer p { font-size: 12px; color: #888; margin: 0; line-height: 1.7; }
+    .footer a { color: #c8a882; text-decoration: none; }
+    .footer .brand-small {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      color: #e0c9b0;
+      display: block;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-mark">🌿</div>
+    <div class="brand">Dance<span>&amp;</span>Wellness</div>
+  </div>
+
+  <!-- Approved badge -->
+  <div class="badge-wrap">
+    <span class="badge">✓ &nbsp;Application Approved</span>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+    <div class="greeting">
+      Welcome aboard,<br><em th:text="${username}">Instructor</em>!
+    </div>
+    <div class="divider"></div>
+
+    <p>
+      We're thrilled to let you know that your instructor application has been
+      <strong>reviewed and approved</strong> by our team. You are now an official
+      instructor on the Dance&amp;Wellness platform!
+    </p>
+
+    <div class="highlight-box">
+      <p>
+        💡 Your profile is now active. Students can discover your classes, and you
+        can start building your schedule right away.
+      </p>
+    </div>
+
+    <p>Here's how to get started:</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Complete your profile</strong> — add a bio, profile photo, and your specialisations so students know what to expect.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Create your first class</strong> — set the schedule, capacity, and description from your instructor dashboard.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Go live</strong> — publish your class and start welcoming students to your sessions.</div>
+      </div>
+    </div>
+
+    <div class="cta-wrap">
+      <a href="#" class="cta-btn">Go to My Dashboard →</a>
+    </div>
+
+    <p style="font-size:13px; color:#888; text-align:center;">
+      Need help getting started? Reply to this email and our support team will be happy to assist.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="brand-small">Dance&amp;Wellness</span>
+    <p>
+      © 2026 Dance&amp;Wellness Platform. All rights reserved.<br/>
+      You received this email because you applied as an instructor on our platform.<br/>
+      <a href="#">Privacy Policy</a> &nbsp;·&nbsp; <a href="#">Unsubscribe</a>
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

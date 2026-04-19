@@ -1,0 +1,144 @@
+.banned-accounts-page {
+  padding: 24px;
+  animation: fadeIn 0.4s ease-out;
+  background-color: #f8f9fa;
+  min-height: 100%;
+}
+
+.banned-accounts-header {
+  margin-bottom: 30px;
+}
+
+.banned-accounts-heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1f36;
+  margin: 0 0 8px 0;
+}
+
+.banned-accounts-subheading {
+  font-size: 15px;
+  color: #697386;
+  margin: 0;
+}
+
+.banned-accounts-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: #697386;
+}
+
+.banned-accounts-empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  color: #697386;
+}
+
+.banned-accounts-empty h2 {
+  color: #1a1f36;
+  font-size: 20px;
+  margin: 16px 0 8px 0;
+}
+
+.banned-accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.banned-account-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #e53e3e;
+}
+
+.banned-account-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+}
+
+.banned-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.banned-account-role {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.banned-account-role.instructor {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.banned-account-role.student {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.banned-account-body h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1f36;
+  margin: 0 0 4px 0;
+}
+
+.banned-account-body p {
+  font-size: 14px;
+  color: #697386;
+  margin: 0 0 16px 0;
+  word-break: break-all;
+}
+
+.banned-account-meta {
+  font-size: 13px;
+  color: #4f566b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.banned-unban-btn {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.banned-unban-btn:hover {
+  background: #38a169;
+  color: white;
+  border-color: #38a169;
+}

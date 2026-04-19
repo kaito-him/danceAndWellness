@@ -1,0 +1,97 @@
+package com.example.demo.services;
+
+import com.example.demo.entities.Instructor;
+import com.example.demo.entities.User;
+import com.example.demo.repositories.InstructorRepository;
+import com.example.demo.repositories.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class InstructorService {
+
+    private final InstructorRepository instructorRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public Optional<Instructor> getInstructorById(String instructorId) {
+        return instructorRepository.findById(instructorId)
+                .map(this::hydrateTransientFields);
+    }
+
+    public Instructor saveInstructor(Instructor instructor) {
+        return hydrateTransientFields(instructorRepository.save(instructor));
+    }
+    public Optional<Instructor> getInstructorByUserId(String userId) {
+        return instructorRepository.findByUserId(userId)
+                .map(this::hydrateTransientFields);
+    }
+
+    @Transactional
+    public Instructor updateInstructor(String instructorId,
+                                       String currentPassword,
+                                       Instructor updates) {
+
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Instructor not found: " + instructorId));
+
+        User user = userRepository.findById(instructor.getUserId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Linked user not found: " + instructor.getUserId()));
+
+        // ── Password verification ──────────────────────────────────────────
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect.");
+        }
+
+        // ── Update User fields ─────────────────────────────────────────────
+        boolean userDirty = false;
+
+        if (updates.getUsername() != null && !updates.getUsername().isBlank()) {
+            user.setUsername(updates.getUsername());
+            userDirty = true;
+        }
+        if (updates.getEmail() != null && !updates.getEmail().isBlank()) {
+            user.setEmail(updates.getEmail());
+            userDirty = true;
+        }
+        if (userDirty) {
+            userRepository.save(user);
+        }
+
+        // ── Update Instructor fields ───────────────────────────────────────
+        if (updates.getPhoto() != null && !updates.getPhoto().isBlank()) {
+            instructor.setPhoto(updates.getPhoto());
+        }
+        if (updates.getStudioName() != null) {
+            instructor.setStudioName(updates.getStudioName());
+        }
+        if (updates.getBio() != null && !updates.getBio().isBlank()) {
+            instructor.setBio(updates.getBio());
+        }
+        if (updates.getLinkedIn() != null) {
+            instructor.setLinkedIn(updates.getLinkedIn());
+        }
+        if (updates.getWebsite() != null) {
+            instructor.setWebsite(updates.getWebsite());
+        }
+
+        return hydrateTransientFields(instructorRepository.save(instructor));
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    private Instructor hydrateTransientFields(Instructor instructor) {
+        userRepository.findById(instructor.getUserId()).ifPresent(u -> {
+            instructor.setUsername(u.getUsername());
+            instructor.setEmail(u.getEmail());
+        });
+        return instructor;
+    }
+}
