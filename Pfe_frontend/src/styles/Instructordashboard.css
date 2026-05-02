@@ -55,7 +55,11 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--id-bg);
+  background-color: var(--id-bg);
+  background-image: url('../assets/dance-wellness-bg.svg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   font-family: var(--id-font-body);
   color: var(--id-text);
   -webkit-font-smoothing: antialiased;
@@ -420,6 +424,11 @@
   overflow-y: auto;
   min-height: calc(100vh - var(--id-topnav-h));
   animation: id-fadeUp 0.35s ease both;
+}
+
+.id-main-no-padding {
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 /* ══════════════════════════════════════════════════════════

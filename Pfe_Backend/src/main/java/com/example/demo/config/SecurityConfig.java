@@ -30,13 +30,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/students/**").authenticated()
                 .requestMatchers("/api/users/**").authenticated()
 
                 // ── Public ────────────────────────────────────────────────
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/courses/published").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
                 .requestMatchers("/api/auth/register/instructor").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 
@@ -45,7 +45,7 @@ public class SecurityConfig {
 
                 // ── Files ─────────────────────────────────────────────────
                 .requestMatchers(HttpMethod.POST, "/api/files/upload")
-                    .hasAnyRole("INSTRUCTOR", "ADMIN")
+                    .hasAnyRole("INSTRUCTOR", "ADMIN", "STUDENT")
 
                 // ── Admin — 
                 .requestMatchers(HttpMethod.GET,   "/api/admin/applications")
@@ -54,31 +54,72 @@ public class SecurityConfig {
                     .hasRole("ADMIN")
                 .requestMatchers("/api/admin/payments/**")
                     .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/statistics/**")
+                    .hasRole("ADMIN")
                  .requestMatchers(HttpMethod.POST, "/api/categories")
                     .hasAnyRole("ADMIN")
                     
                     
                  // Instructors
                     .requestMatchers(HttpMethod.GET, "/api/instructors/**").permitAll()
-
-                    // Update requires auth
         
+                 // ── Progress (add this block with the enrollment rules) ──────────────
+                    .requestMatchers("/api/progress/stream").authenticated()
+                    .requestMatchers("/api/progress/**").authenticated()
+                    // ── Comments (MUST come before the generic /api/courses/** rules) ──
+                    .requestMatchers(HttpMethod.GET,    "/api/courses/*/comments").permitAll()
+                    .requestMatchers(HttpMethod.GET,    "/api/courses/*/comments/*/replies").permitAll()
+                    .requestMatchers(HttpMethod.POST,   "/api/courses/*/comments").authenticated()
+                    .requestMatchers(HttpMethod.POST,   "/api/courses/*/comments/*/replies").authenticated()
+                    .requestMatchers(HttpMethod.POST,   "/api/courses/*/comments/*/like").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/courses/*/comments/*/like").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/courses/*/comments/**").authenticated() // ← before course DELETE
+
                 // ── Courses ───────────────────────────────────────────────
                 .requestMatchers(HttpMethod.GET,    "/api/courses/pending").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET,    "/api/courses/admin-archived").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH,  "/api/courses/*/unarchive-admin").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET,    "/api/courses/my-published").hasRole("INSTRUCTOR")
                 .requestMatchers(HttpMethod.GET,    "/api/courses/my-pending").hasRole("INSTRUCTOR")
+                .requestMatchers(HttpMethod.GET,    "/api/courses/my-drafts").hasRole("INSTRUCTOR")
+                .requestMatchers(HttpMethod.GET,    "/api/courses/my-archived").hasRole("INSTRUCTOR")
                 .requestMatchers(HttpMethod.POST,   "/api/courses").hasAnyRole("INSTRUCTOR", "ADMIN")
+                .requestMatchers(HttpMethod.POST,   "/api/courses/draft").hasRole("INSTRUCTOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/courses/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/courses/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH,  "/api/courses/*/publish").hasRole("INSTRUCTOR")
+                .requestMatchers(HttpMethod.PATCH,  "/api/courses/*/archive-instructor").hasRole("INSTRUCTOR")
+                .requestMatchers(HttpMethod.PATCH,  "/api/courses/*/unarchive").hasRole("INSTRUCTOR")
                 .requestMatchers(HttpMethod.PATCH,  "/api/courses/**").hasRole("ADMIN")
 
+                // Public reads (must come after protected /my-* routes)
+                .requestMatchers(HttpMethod.GET, "/api/courses/*/enrollments/count").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/courses/*").permitAll()
+
+                
+                
                 // ── Notifications ─────────────────────────────────────────
-                .requestMatchers("/api/notifications/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                .requestMatchers("/api/notifications/**").authenticated()
 
                 // ── Payment ───────────────────────────────────────────────
+             // ── Payment / Enrollment ──────────────────────────────────────────────
                 .requestMatchers(HttpMethod.GET,  "/api/payment/is-enrolled").authenticated()
                 .requestMatchers("/api/enrollment/**").authenticated()
+
+                // ── Progress ──────────────────────────────────────────────────────────
+                .requestMatchers(HttpMethod.GET,  "/api/progress/stream").authenticated()  // SSE
+                .requestMatchers(HttpMethod.GET,  "/api/progress/course").authenticated()
+                .requestMatchers(HttpMethod.GET,  "/api/progress/lessons").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/progress/update").authenticated()
+                
+                
                 .requestMatchers("/api/instructor/payments/**")
-                .hasRole("INSTRUCTOR")
+                .hasAnyRole("INSTRUCTOR", "ADMIN")
+             // ── Messages ─────────────────────────────────────────────
+                .requestMatchers("/api/messages/**").authenticated()
+
+                // ── Badges ───────────────────────────────────────────────
+                .requestMatchers("/api/badges/**").authenticated()
 
                 .anyRequest().authenticated()
             )

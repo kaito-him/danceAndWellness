@@ -1,7 +1,7 @@
 .admin-students-page {
   padding: 24px;
   animation: fadeIn 0.4s ease-out;
-  background-color: #f8f9fa;
+  background-color: transparent;
   min-height: 100%;
 }
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import api from "../components/services/api";
 import "../styles/NotificationBell.css";
 
-export default function NotificationBell() {
+export default function NotificationBell({ onNotificationClick }) {
   const [open,          setOpen]          = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unread,        setUnread]        = useState(0);
@@ -80,13 +80,30 @@ export default function NotificationBell() {
               <div className="nb-empty">No notifications yet</div>
             ) : (
               notifications.map((n) => (
-                <div key={n.id} className={`nb-item ${n.read ? "" : "nb-item-unread"}`}>
-                  <span className={`nb-dot ${n.type === "COURSE_APPROVED" ? "nb-dot-green" : "nb-dot-red"}`} />
+                <button
+                  key={n.id}
+                  className={`nb-item ${n.read ? "" : "nb-item-unread"}`}
+                  onClick={() => {
+                    onNotificationClick?.(n);
+                    setOpen(false);
+                  }}
+                >
+                  <span className={`nb-dot ${
+                    n.type === "COURSE_APPROVED"           ? "nb-dot-green"  :
+                    n.type === "COURSE_ENROLLMENT"         ? "nb-dot-blue"   :
+                    n.type === "COURSE_PUBLISHED"          ? "nb-dot-purple" :
+                    n.type === "NEW_INSTRUCTOR_APPLICATION"? "nb-dot-orange" :
+                    n.type === "COMMENT_REPLY"             ? "nb-dot-teal"   :
+                    n.type === "COMMENT_LIKE"              ? "nb-dot-pink"   :
+                    n.type === "BADGE_EARNED"              ? "nb-dot-gold"   :
+                    n.type === "PURCHASE_SUCCESS"          ? "nb-dot-green"  :
+                    "nb-dot-red"
+                  }`} />
                   <div className="nb-item-body">
                     <p className="nb-item-msg">{n.message}</p>
                     <p className="nb-item-time">{formatTime(n.createdAt)}</p>
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>

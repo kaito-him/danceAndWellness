@@ -112,7 +112,7 @@ function StudentCard({ student, onSelect, onBan, onUnban }) {
   );
 }
 
-export default function AdminStudents() {
+export default function AdminStudents({ onCourseClick }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [students, setStudents]     = useState([]);
@@ -195,8 +195,13 @@ export default function AdminStudents() {
   };
 
   const handleBack = () => {
-    setSelected(null);
-    pushUrl({ studentId: null });
+    const fromCourseId = searchParams.get("fromCourseId");
+    if (fromCourseId) {
+      setSearchParams({ section: "course-preview", courseId: fromCourseId });
+    } else {
+      setSelected(null);
+      pushUrl({ studentId: null });
+    }
   };
 
   const handleBan = async () => {
@@ -229,7 +234,13 @@ export default function AdminStudents() {
   }, {});
 
   if (selected) {
-    return <AdminStudentDetail student={selected} onBack={handleBack} />;
+    return <AdminStudentDetail 
+      student={selected} 
+      onBack={handleBack} 
+      onCourseClick={(cid) => onCourseClick(cid, selected.id)}
+      onBan={() => setBanCandidate(selected)}
+      onUnban={() => setUnbanCandidate(selected)}
+    />;
   }
 
   return (

@@ -8,10 +8,13 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends MongoRepository<Course, String> {
     List<Course> findByStatus(CourseStatus status);
     List<Course> findByInstructorAndStatus(Instructor instructor, CourseStatus status);
     List<Course> findByInstructor_Id(String instructorId);
+    Optional<Course> findByCourseId(String courseId);
+    List<Course> findByArchivedByAdmin(Boolean archivedByAdmin);
 }

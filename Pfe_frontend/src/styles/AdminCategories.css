@@ -15,12 +15,12 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
 }
 
 .cat-title {
     font-family: var(--ad-font-display);
-    font-size: 2.2rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: var(--ad-text);
     margin: 0 0 4px;
@@ -31,42 +31,42 @@
 .cat-title::after {
     content: '';
     display: block;
-    width: 48px;
+    width: 36px;
     height: 3px;
     background: var(--ad-gold);
     border-radius: 2px;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 .cat-sub {
     color: var(--ad-muted);
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
-    margin-top: 14px;
+    margin-top: 10px;
 }
 
 .cat-add-btn {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     background: var(--ad-gold);
     color: #fff;
     border: none;
     border-radius: var(--ad-radius-md);
-    padding: 10px 20px;
-    font-size: 13.5px;
+    padding: 8px 16px;
+    font-size: 13px;
     font-weight: 600;
     font-family: var(--ad-font-body);
     cursor: pointer;
     transition: var(--ad-transition);
-    box-shadow: 0 3px 14px rgba(184, 156, 77, 0.3);
+    box-shadow: 0 3px 12px rgba(184, 156, 77, 0.25);
     white-space: nowrap;
 }
 
 .cat-add-btn:hover {
     background: var(--ad-gold-light);
     transform: translateY(-1px);
-    box-shadow: 0 5px 18px rgba(184, 156, 77, 0.4);
+    box-shadow: 0 4px 15px rgba(184, 156, 77, 0.35);
 }
 
 .cat-add-btn:active {
@@ -76,58 +76,56 @@
 /* ── Stats bar ──────────────────────────────── */
 .cat-statsbar {
     display: flex;
-    gap: 16px;
-    margin-bottom: 32px;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
 .cat-stat {
     background: var(--ad-surface);
     border: 1px solid var(--ad-border);
-    border-radius: var(--ad-radius-lg);
-    padding: 16px 24px;
+    border-radius: var(--ad-radius-md);
+    padding: 10px 18px;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     box-shadow: var(--ad-shadow-sm);
 }
 
 .cat-stat-num {
     font-family: var(--ad-font-display);
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--ad-gold);
     line-height: 1;
 }
 
 .cat-stat-label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--ad-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
 
-/* ── Grid — 3 per row ─────── */
+/* ── Grid — 4 per row ─────── */
 .cat-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 28px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
 }
 
 /* ── Category card ──────────────────────────── */
 .cat-card {
     background: var(--ad-surface);
     border: 1px solid var(--ad-border);
-    border-radius: var(--ad-radius-lg);
+    border-radius: var(--ad-radius-md);
     overflow: hidden;
-    /* keeps image corners clipped */
     transition: var(--ad-transition);
     cursor: default;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0;
-    /* thumb is flush, name gets its own padding */
 }
 
 .cat-card::before {
@@ -141,9 +139,9 @@
 }
 
 .cat-card:hover {
-    box-shadow: var(--ad-shadow-lg);
-    transform: translateY(-4px);
-    border-color: var(--ad-border-soft);
+    box-shadow: var(--ad-shadow-md);
+    transform: translateY(-3px);
+    border-color: var(--ad-gold-border);
 }
 
 .cat-card:hover::before {
@@ -151,6 +149,16 @@
 }
 
 /* ── Icon wrap ──────────────────────────────── */
+.cat-thumb-wrap {
+    width: 100%;
+    height: 120px;
+    background: var(--ad-surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--ad-border-soft);
+}
 
 .cat-thumb-img {
     width: 100%;
@@ -159,28 +167,25 @@
     display: block;
 }
 
-.cat-card:hover .cat-icon-wrap {
-    border-color: var(--ad-gold-border);
-    box-shadow: 0 0 0 5px var(--ad-gold-tint);
-}
-
 .cat-icon-fallback {
     color: var(--ad-gold);
     opacity: 0.35;
+    width: 32px;
+    height: 32px;
 }
 
 /* ── Text ────────────────────────────────────── */
 .cat-name {
     font-family: var(--ad-font-body);
-    font-size: 1rem;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--ad-text);
     letter-spacing: 0.01em;
     line-height: 1.3;
-    padding: 18px 16px;
+    padding: 12px 10px;
     width: 100%;
     text-align: center;
-    background: var(--ad-surface2);
+    background: var(--ad-surface);
 }
 
 /* ── Loading / Empty ────────────────────────── */
@@ -453,21 +458,102 @@
     border: 1px solid #f0b8b2;
 }
 
+/* ── Category card delete button ─────────────── */
+.cat-card {
+    position: relative;
+}
+
+.cat-card-delete {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--ad-border);
+    color: var(--ad-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.cat-card:hover .cat-card-delete {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.cat-card-delete:hover {
+    background: #fff;
+    color: var(--ad-red, #dc2626);
+    border-color: #fca5a5;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+/* ── Delete Confirmation Modal ──────────────── */
+.cat-modal.confirm {
+    max-width: 400px;
+}
+
+.cat-modal-body {
+    padding: 24px;
+    text-align: center;
+}
+
+.cat-modal-body p {
+    font-size: 15px;
+    color: var(--ad-text);
+    margin: 0 0 10px;
+}
+
+.cat-modal-body span {
+    font-size: 13px;
+    color: var(--ad-muted);
+    display: block;
+    line-height: 1.5;
+}
+
+.cat-btn-delete {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: var(--ad-radius-sm);
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--ad-font-body);
+    cursor: pointer;
+    transition: var(--ad-transition);
+    box-shadow: 0 3px 12px rgba(220, 38, 38, 0.25);
+}
+
+.cat-btn-delete:hover:not(:disabled) {
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(220, 38, 38, 0.35);
+}
+
+.cat-btn-delete:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* ── Responsive ─────────────────────────────── */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
     .cat-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
     .cat-grid {
         grid-template-columns: repeat(2, 1fr);
-    }
-
-    .cat-header {
-        flex-direction: column;
-        gap: 14px;
     }
 }
 

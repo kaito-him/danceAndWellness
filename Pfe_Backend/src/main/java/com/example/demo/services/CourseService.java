@@ -5,6 +5,7 @@ import com.example.demo.entities.CourseStatus;
 import com.example.demo.entities.Instructor;
 import com.example.demo.entities.User;
 import com.example.demo.repositories.CourseRepository;
+import com.example.demo.repositories.EnrollmentRepository;
 import com.example.demo.repositories.InstructorRepository;
 import com.example.demo.repositories.UserRepository;
 
@@ -25,6 +26,9 @@ public class CourseService {
     private InstructorRepository instructorRepository;
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
 
     // ── Helpers ───────────────────────────────────────────────────
 
@@ -40,6 +44,43 @@ public class CourseService {
         return instructor.getUserId();
     }
 
+    private void validatePublishable(Course course) {
+        if (course.getLessons() == null || course.getLessons().isEmpty()) {
+            throw new IllegalArgumentException("Course must have at least one lesson.");
+        }
+        boolean missingMedia = course.getLessons().stream()
+                .anyMatch(l -> l == null || l.getMediaUrl() == null || l.getMediaUrl().isBlank());
+        if (missingMedia) {
+            throw new IllegalArgumentException("All lessons must have a video before publishing.");
+        }
+    }
+
+    /**
+     * Applies publish rules and returns whether admin review is needed.
+     * Updated: Both free and paid courses now publish immediately (no admin review).
+     */
+    private boolean applyPublishRules(Course course) {
+        boolean isFree = Boolean.TRUE.equals(course.getIsFree());
+
+        if (!isFree) {
+            // Paid course — require the instructor to have a connected Stripe account
+            Instructor instructor = course.getInstructor();
+            if (instructor != null && instructor.getId() != null) {
+                instructorRepository.findById(instructor.getId()).ifPresent(fullInstructor -> {
+                    if (fullInstructor.getStripeAccountId() == null
+                            || fullInstructor.getStripeAccountId().isBlank()) {
+                        throw new IllegalStateException(
+                                "You must connect a Stripe account before publishing paid courses.");
+                    }
+                });
+            }
+        }
+
+        // Both free and paid courses publish immediately
+        course.setStatus(CourseStatus.PUBLISHED);
+        return false; // No admin review needed
+    }
+
     // ── Read ──────────────────────────────────────────────────────
 
     public List<Course> getAllPublishedCourses() {
@@ -50,6 +91,15 @@ public class CourseService {
                         getInstructorUsername(c.getInstructor().getUserId()));
         });
         return courses;
+    }
+    
+    public long getEnrollmentCount(String courseId) {
+        // Optional: verify course exists
+        if (!courseRepository.existsById(courseId)) {
+            throw new IllegalArgumentException("Course not found: " + courseId);
+        }
+
+        return enrollmentRepository.countByCourseId(courseId);
     }
 
     public List<Course> getPublishedCoursesByInstructor(Instructor instructor) {
@@ -65,62 +115,128 @@ public class CourseService {
         return course;
     }
 
-    public List<Course> getAllPendingCourses() {
-        return courseRepository.findByStatus(CourseStatus.PENDING_REVIEW);
+    public List<Course> getDraftCoursesByInstructor(Instructor instructor) {
+        return courseRepository.findByInstructorAndStatus(instructor, CourseStatus.DRAFT);
     }
 
-    public List<Course> getPendingCoursesByInstructor(Instructor instructor) {
-        return courseRepository.findByInstructorAndStatus(instructor, CourseStatus.PENDING_REVIEW);
+    public List<Course> getArchivedCoursesByInstructor(Instructor instructor) {
+        return courseRepository.findByInstructorAndStatus(instructor, CourseStatus.ARCHIVED);
     }
 
     // ── Create ────────────────────────────────────────────────────
 
     /**
      * Business rules:
-     * - Free courses → PUBLISHED immediately (no admin review needed)
-     * - Paid courses → PENDING_REVIEW (admin must approve before going live)
-     * Instructor must have an active Stripe account first.
+     * - All courses (free and paid) → PUBLISHED immediately
+     * Instructor must have an active Stripe account for paid courses.
      */
     public Course addCourse(Course course) {
-        if (course.getLessons() == null || course.getLessons().isEmpty()) {
-            throw new IllegalArgumentException("Course must have at least one lesson.");
-        }
-
-        boolean isFree = Boolean.TRUE.equals(course.getIsFree());
-
-        if (!isFree) {
-            // Paid course — require the instructor to have a connected Stripe account
-            Instructor instructor = course.getInstructor();
-            if (instructor != null && instructor.getId() != null) {
-                instructorRepository.findById(instructor.getId()).ifPresent(fullInstructor -> {
-                    if (fullInstructor.getStripeAccountId() == null
-                            || fullInstructor.getStripeAccountId().isBlank()) {
-                        throw new IllegalStateException(
-                                "You must connect a Stripe account before publishing paid courses.");
-                    }
-                });
-            }
-            course.setStatus(CourseStatus.PENDING_REVIEW);
-        } else {
-            // Free course → publish straight away, no review needed
-            course.setStatus(CourseStatus.PUBLISHED);
-        }
+        validatePublishable(course);
+        applyPublishRules(course); // Always publishes immediately now
 
         course.setCreatedAt(LocalDateTime.now());
         Course saved = courseRepository.save(course);
 
-        // Notify admin of new paid course awaiting review
-        if (!isFree) {
-            String instructorUserId = resolveInstructorUserId(course.getInstructor());
-            if (instructorUserId != null) {
-                notificationService.create(
-                        instructorUserId,
-                        "Your paid course \"" + course.getTitle()
-                                + "\" has been submitted for admin review.");
-            }
-        }
+        // Notify all admins about the newly published course
+        String instructorName = saved.getInstructor() != null
+            ? getInstructorUsername(saved.getInstructor().getUserId())
+            : "An instructor";
+        notificationService.notifyAllAdmins(
+            instructorName + " published a new course: \"" + saved.getTitle() + "\".",
+            "COURSE_PUBLISHED",
+            saved.getCourseId(),
+            false
+        );
 
         return saved;
+    }
+
+    public Course addDraftCourse(Course course) {
+        course.setStatus(CourseStatus.DRAFT);
+        if (course.getCreatedAt() == null) {
+            course.setCreatedAt(LocalDateTime.now());
+        }
+        if (course.getLessons() == null) {
+            course.setLessons(java.util.List.of());
+        }
+        if (course.getQuizzes() == null) {
+            course.setQuizzes(java.util.List.of());
+        }
+        return courseRepository.save(course);
+    }
+
+    public Course publishDraft(String courseId, Instructor requestingInstructor) {
+        Course existing = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+
+        if (existing.getInstructor() == null
+                || !existing.getInstructor().getUserId().equals(requestingInstructor.getUserId())) {
+            throw new SecurityException("You are not the owner of this course.");
+        }
+
+        if (existing.getStatus() != CourseStatus.DRAFT) {
+            throw new IllegalArgumentException("Only draft courses can be published.");
+        }
+
+        validatePublishable(existing);
+        applyPublishRules(existing); // Always publishes immediately now
+        Course saved = courseRepository.save(existing);
+
+        // Notify all admins about the newly published course
+        String instructorName = saved.getInstructor() != null
+            ? getInstructorUsername(saved.getInstructor().getUserId())
+            : "An instructor";
+        notificationService.notifyAllAdmins(
+            instructorName + " published a new course: \"" + saved.getTitle() + "\".",
+            "COURSE_PUBLISHED",
+            saved.getCourseId(),
+            false
+        );
+
+        return saved;
+    }
+
+    public Course archiveCourseByInstructor(String courseId, Instructor requestingInstructor) {
+        Course existing = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+
+        if (existing.getInstructor() == null
+                || !existing.getInstructor().getUserId().equals(requestingInstructor.getUserId())) {
+            throw new SecurityException("You are not the owner of this course.");
+        }
+
+        if (existing.getStatus() != CourseStatus.PUBLISHED) {
+            throw new IllegalArgumentException("Only published courses can be archived.");
+        }
+
+        if (!Boolean.TRUE.equals(existing.getIsFree())) {
+            throw new IllegalStateException("Paid courses cannot be archived.");
+        }
+
+        existing.setStatus(CourseStatus.ARCHIVED);
+        existing.setArchivedByAdmin(false);
+        return courseRepository.save(existing);
+    }
+
+    public Course unarchiveCourseByInstructor(String courseId, Instructor requestingInstructor) {
+        Course existing = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+
+        if (existing.getInstructor() == null
+                || !existing.getInstructor().getUserId().equals(requestingInstructor.getUserId())) {
+            throw new SecurityException("You are not the owner of this course.");
+        }
+
+        if (existing.getStatus() != CourseStatus.ARCHIVED) {
+            throw new IllegalArgumentException("Only archived courses can be unarchived.");
+        }
+
+        if (Boolean.TRUE.equals(existing.getArchivedByAdmin())) {
+            throw new IllegalStateException("This course was archived by an admin and cannot be unarchived by you. Please contact support.");
+        }
+
+        existing.setStatus(CourseStatus.PUBLISHED);
+        return courseRepository.save(existing);
     }
 
     // ── Update ────────────────────────────────────────────────────
@@ -133,20 +249,51 @@ public class CourseService {
             throw new SecurityException("You are not the owner of this course.");
         }
 
-        if (updated.getLessons() == null || updated.getLessons().isEmpty()) {
-            throw new IllegalArgumentException("Course must have at least one lesson.");
+        if (existing.getStatus() != CourseStatus.DRAFT) {
+            if (updated.getLessons() == null || updated.getLessons().isEmpty()) {
+                throw new IllegalArgumentException("Course must have at least one lesson.");
+            }
         }
 
+        // Detect new lessons added to a published course
+        int oldLessonCount = existing.getLessons() == null ? 0 : existing.getLessons().size();
+        int newLessonCount = updated.getLessons() == null ? 0 : updated.getLessons().size();
+        boolean isPublished = existing.getStatus() == CourseStatus.PUBLISHED;
+
         existing.setTitle(updated.getTitle());
+        existing.setDescription(updated.getDescription());
         existing.setIsFree(updated.getIsFree());
         existing.setPrice(updated.getPrice());
         existing.setLevel(updated.getLevel());
         existing.setCategoryId(updated.getCategoryId());
         existing.setThumbnailUrl(updated.getThumbnailUrl());
-        existing.setLessons(updated.getLessons());
-        existing.setQuizzes(updated.getQuizzes());
+        existing.setLessons(updated.getLessons() == null ? java.util.List.of() : updated.getLessons());
+        existing.setQuizzes(updated.getQuizzes() == null ? java.util.List.of() : updated.getQuizzes());
         // Keep original instructor, status, createdAt unchanged
-        return courseRepository.save(existing);
+        Course saved = courseRepository.save(existing);
+
+        // Notify enrolled students about new lessons
+        if (isPublished && newLessonCount > oldLessonCount) {
+            int addedCount = newLessonCount - oldLessonCount;
+            notifyEnrolledStudentsNewLesson(saved, addedCount);
+        }
+
+        return saved;
+    }
+
+    private void notifyEnrolledStudentsNewLesson(Course course, int addedCount) {
+        String lessonWord = addedCount == 1 ? "lesson" : "lessons";
+        java.util.List<com.example.demo.entities.Enrollment> enrollments =
+            enrollmentRepository.findByCourseId(course.getCourseId());
+        for (com.example.demo.entities.Enrollment enrollment : enrollments) {
+            notificationService.create(
+                enrollment.getStudentId(),
+                addedCount + " new " + lessonWord + " added to \"" + course.getTitle() + "\".",
+                "NEW_LESSON",
+                course.getCourseId(),
+                false
+            );
+        }
     }
 
     // ── Delete ────────────────────────────────────────────────────
@@ -162,40 +309,69 @@ public class CourseService {
         courseRepository.deleteById(courseId);
     }
 
-    // ── Approve (Admin) → PUBLISHED ───────────────────────────────
-
-    public Course approveCourse(String courseId) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
-
-        course.setStatus(CourseStatus.PUBLISHED);
-        Course saved = courseRepository.save(course);
-
-        String instructorUserId = resolveInstructorUserId(course.getInstructor());
-        if (instructorUserId != null)
-            notificationService.create(
-                    instructorUserId,
-                    "Your course \"" + course.getTitle()
-                            + "\" has been approved and is now published!");
-
-        return saved;
-    }
-
     // ── Archive (Admin) → ARCHIVED ────────────────────────────────
 
-    public Course archiveCourse(String courseId) {
+    public Course archiveCourse(String courseId, String message) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
 
         course.setStatus(CourseStatus.ARCHIVED);
+        course.setArchivedByAdmin(true);
+        course.setArchiveReason(message != null ? message.trim() : null);
+        course.setArchivedAt(java.time.LocalDateTime.now());
         Course saved = courseRepository.save(course);
 
         String instructorUserId = resolveInstructorUserId(course.getInstructor());
-        if (instructorUserId != null)
+        if (instructorUserId != null) {
+            String notificationMessage = "Your course \"" + course.getTitle() + "\" has been archived by an admin.";
+            if (message != null && !message.isBlank()) {
+                notificationMessage += " Reason: " + message;
+            }
             notificationService.create(
                     instructorUserId,
-                    "Your course \"" + course.getTitle()
-                            + "\" has been archived by an admin.");
+                    notificationMessage,
+                    "COURSE_ARCHIVED",
+                    course.getCourseId(),
+                    false);
+        }
+
+        return saved;
+    }
+
+    public List<Course> getAllAdminArchivedCourses() {
+        List<Course> courses = courseRepository.findByArchivedByAdmin(true);
+        courses.forEach(c -> {
+            if (c.getInstructor() != null) {
+                c.getInstructor().setUsername(getInstructorUsername(c.getInstructor().getUserId()));
+            }
+        });
+        return courses;
+    }
+
+    public Course unarchiveCourseByAdmin(String courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+
+        if (!Boolean.TRUE.equals(course.getArchivedByAdmin())) {
+            throw new IllegalStateException("This course was not archived by an admin.");
+        }
+
+        course.setStatus(CourseStatus.PUBLISHED);
+        course.setArchivedByAdmin(false);
+        course.setArchiveReason(null);
+        course.setArchivedAt(null);
+        Course saved = courseRepository.save(course);
+
+        // Notify the instructor
+        String instructorUserId = resolveInstructorUserId(course.getInstructor());
+        if (instructorUserId != null) {
+            notificationService.create(
+                    instructorUserId,
+                    "Your course \"" + course.getTitle() + "\" has been unarchived by an admin and is now live again.",
+                    "COURSE_UNARCHIVED",
+                    course.getCourseId(),
+                    false);
+        }
 
         return saved;
     }

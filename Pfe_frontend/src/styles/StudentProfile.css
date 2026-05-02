@@ -1,0 +1,6 @@
+/*
+  StudentProfile.css
+  Layout is handled entirely via inline styles in StudentProfilePage.jsx
+  to avoid conflicts with the .sd-root * { margin:0; padding:0 } reset.
+  This file is intentionally minimal.
+*/

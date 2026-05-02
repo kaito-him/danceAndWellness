@@ -1,0 +1,257 @@
+/* ── Student Badges Page (Scoped to .sd-main) ──────────────── */
+.sd-main .sb-page {
+  padding: 32px 40px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Header */
+.sd-main .sb-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.sd-main .sb-header-icon {
+  color: #c9a84c;
+}
+.sd-main .sb-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  letter-spacing: -0.4px;
+}
+.sd-main .sb-subtitle {
+  font-size: 14px;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+/* Progress */
+.sd-main .sb-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 48px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.sd-main .sb-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #f0ece3;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.sd-main .sb-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c9a84c, #e8d48b);
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sd-main .sb-progress-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9a84c;
+  min-width: 36px;
+}
+
+/* Section titles */
+.sd-main .sb-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  margin: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.sd-main .sb-section-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.sd-main .sb-section-dot.is-earned { background: #c9a84c; }
+.sd-main .sb-section-dot.is-locked { background: #ccc; }
+
+/* Grid */
+.sd-main .sb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 56px;
+  justify-content: center;
+}
+
+/* Card */
+.sd-main .sb-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 28px 20px 22px;
+  text-align: center;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.sd-main .sb-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Earned card */
+.sd-main .sb-card.is-earned {
+  border-color: #e8d48b;
+  background: linear-gradient(180deg, #fffdf5 0%, #fff 100%);
+}
+.sd-main .sb-card.is-earned:hover {
+  box-shadow: 0 12px 32px rgba(201, 168, 76, 0.15);
+}
+.sd-main .sb-card-glow {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(201, 168, 76, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Locked card */
+.sd-main .sb-card.is-locked {
+  background: #fafafa;
+  border-color: #e8e8e8;
+}
+.sd-main .sb-card.is-locked .sb-icon-img {
+  filter: grayscale(1) opacity(0.4);
+}
+.sd-main .sb-card.is-locked .sb-badge-name {
+  color: #aaa;
+}
+.sd-main .sb-card.is-locked .sb-badge-desc {
+  color: #bbb;
+}
+.sd-main .sb-lock-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #ccc;
+  z-index: 2;
+}
+
+/* Icon */
+.sd-main .sb-icon-wrap {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+.sd-main .sb-icon-wrap.is-earned {
+  background: linear-gradient(135deg, #fdf6e3, #f5e6b8);
+  box-shadow: 0 4px 16px rgba(201, 168, 76, 0.2);
+}
+.sd-main .sb-icon-wrap.is-locked {
+  background: #f0f0f0;
+}
+.sd-main .sb-card:hover .sb-icon-wrap {
+  transform: scale(1.08);
+}
+.sd-main .sb-icon-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+}
+
+/* Text */
+.sd-main .sb-badge-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 6px;
+}
+.sd-main .sb-badge-desc {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Earned tag */
+.sd-main .sb-earned-tag {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #c9a84c, #e2c96d);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 99px;
+  letter-spacing: 0.3px;
+}
+
+/* Empty state */
+.sd-main .sb-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #aaa;
+}
+.sd-main .sb-empty h2 {
+  margin: 16px 0 6px;
+  color: #888;
+  font-size: 20px;
+}
+.sd-main .sb-empty p {
+  font-size: 14px;
+  color: #aaa;
+}
+
+/* Skeleton */
+.sd-main .sb-skeleton {
+  pointer-events: none;
+}
+.sd-main .sb-skeleton-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f0ece3;
+  margin: 0 auto 14px;
+  animation: sbPulse 1.2s ease-in-out infinite;
+}
+.sd-main .sb-skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: #f0ece3;
+  margin: 0 auto 8px;
+  animation: sbPulse 1.2s ease-in-out infinite;
+}
+.sd-main .sb-sk-name { width: 60%; }
+.sd-main .sb-sk-desc { width: 80%; }
+
+@keyframes sbPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .sd-main .sb-page { padding: 20px 16px; }
+  .sd-main .sb-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .sd-main .sb-card { padding: 20px 14px 16px; }
+  .sd-main .sb-icon-wrap { width: 56px; height: 56px; }
+  .sd-main .sb-icon-img { width: 34px; height: 34px; }
+}

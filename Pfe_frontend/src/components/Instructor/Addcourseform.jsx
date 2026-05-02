@@ -3,6 +3,7 @@ import api from "./../services/api";
 import "../../styles/Addcourseform.css";
 
 const DIFFICULTY_LEVELS = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
+const PRICE_TIERS = ["10", "20", "30"];
 
 const emptyLesson = () => ({
   lessonId: crypto.randomUUID(),
@@ -12,13 +13,34 @@ const emptyLesson = () => ({
   videoPreview: null,
 });
 
+const emptyOption = () => ({
+  optionId: crypto.randomUUID(),
+  text: "",
+  isCorrect: false,
+});
+
+const emptyQuestion = () => ({
+  questionId: crypto.randomUUID(),
+  text: "",
+  options: [{ ...emptyOption(), isCorrect: true }, emptyOption()],
+});
+
+const emptyQuiz = () => ({
+  quizId: crypto.randomUUID(),
+  title: "",
+  questions: [emptyQuestion()],
+});
+
 const emptyForm = {
   title: "",
-  isFree: false,
-  price: "",
+  description: "",
+  isFree: true,
+  priceType: "predefined", // "predefined" | "custom"
+  price: "10",
   level: "BEGINNER",
   categoryId: "",
   lessons: [emptyLesson()],
+  quizzes: [],
 };
 
 async function uploadFile(file) {
@@ -30,7 +52,7 @@ async function uploadFile(file) {
   return res.data.url;
 }
 
-export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
+export default function AddCourseForm({ onClose, onSuccess, instructor }) {
   const [form, setForm]                         = useState(emptyForm);
   const [thumbnailFile, setThumbnailFile]       = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
@@ -53,22 +75,34 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
       .then((res) => {
         const cats = Array.isArray(res.data) ? res.data : [];
         setCategories(cats);
-        if (cats.length > 0)
-          setForm((f) => ({ ...f, categoryId: cats[0].id }));
+        
+        if (cats.length > 0) {
+          // If we have an instructor specialization, try to find a matching category
+          const specialization = instructor?.specialization;
+          const matchedCat = specialization 
+            ? cats.find(c => c.name.toLowerCase() === specialization.toLowerCase())
+            : null;
+
+          if (matchedCat) {
+            setForm((f) => ({ ...f, categoryId: matchedCat.id }));
+          } else {
+            setForm((f) => ({ ...f, categoryId: cats[0].id }));
+          }
+        }
       })
       .catch(() => {/* silently fall back to empty list */})
       .finally(() => setCatsLoading(false));
-  }, []);
+  }, [instructor]);
 
-  // ── Fetch Stripe status when instructor switches to paid ──────
+  // ── Fetch Stripe status on mount ──────
   useEffect(() => {
-    if (form.isFree || !instructorId) return;
+    if (!instructor?.id) return;
     setStripeLoading(true);
-    api.get(`/instructor/payments/${instructorId}/status`)
+    api.get(`/instructor/payments/${instructor.id}/status`)
       .then((res) => setStripeStatus(res.data))
       .catch(() => setStripeStatus(null))
       .finally(() => setStripeLoading(false));
-  }, [form.isFree, instructorId]);
+  }, [instructor]);
 
   // ── Thumbnail ─────────────────────────────────────────────────
   const applyThumbnail = (file) => {
@@ -131,25 +165,143 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
   const removeLesson = (idx) =>
     setForm((f) => ({ ...f, lessons: f.lessons.filter((_, i) => i !== idx) }));
 
+  // ── Quizzes ───────────────────────────────────────────────────
+  const addQuiz = () =>
+    setForm((f) => ({ ...f, quizzes: [...(f.quizzes || []), emptyQuiz()] }));
+
+  const removeQuiz = (idx) =>
+    setForm((f) => ({ ...f, quizzes: (f.quizzes || []).filter((_, i) => i !== idx) }));
+
+  const handleQuizField = (idx, field, value) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      quizzes[idx] = { ...quizzes[idx], [field]: value };
+      return { ...f, quizzes };
+    });
+
+  const addQuestion = (qIdx) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      quizzes[qIdx] = { 
+        ...quizzes[qIdx], 
+        questions: [...quizzes[qIdx].questions, emptyQuestion()] 
+      };
+      return { ...f, quizzes };
+    });
+
+  const removeQuestion = (qIdx, qstIdx) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      quizzes[qIdx] = {
+        ...quizzes[qIdx],
+        questions: quizzes[qIdx].questions.filter((_, i) => i !== qstIdx)
+      };
+      return { ...f, quizzes };
+    });
+
+  const handleQuestionField = (qIdx, qstIdx, field, value) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      const questions = [...quizzes[qIdx].questions];
+      questions[qstIdx] = { ...questions[qstIdx], [field]: value };
+      quizzes[qIdx] = { ...quizzes[qIdx], questions };
+      return { ...f, quizzes };
+    });
+
+  const addOption = (qIdx, qstIdx) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      const questions = [...quizzes[qIdx].questions];
+      questions[qstIdx] = { 
+        ...questions[qstIdx], 
+        options: [...questions[qstIdx].options, emptyOption()] 
+      };
+      quizzes[qIdx] = { ...quizzes[qIdx], questions };
+      return { ...f, quizzes };
+    });
+
+  const removeOption = (qIdx, qstIdx, optIdx) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      const questions = [...quizzes[qIdx].questions];
+      questions[qstIdx] = {
+        ...questions[qstIdx],
+        options: questions[qstIdx].options.filter((_, i) => i !== optIdx)
+      };
+      quizzes[qIdx] = { ...quizzes[qIdx], questions };
+      return { ...f, quizzes };
+    });
+
+  const handleOptionField = (qIdx, qstIdx, optIdx, field, value) =>
+    setForm((f) => {
+      const quizzes = [...(f.quizzes || [])];
+      const questions = [...quizzes[qIdx].questions];
+      const options = [...questions[qstIdx].options];
+      options[optIdx] = { ...options[optIdx], [field]: value };
+      questions[qstIdx] = { ...questions[qstIdx], options };
+      quizzes[qIdx] = { ...quizzes[qIdx], questions };
+      return { ...f, quizzes };
+    });
+
   // ── Stripe gate check ─────────────────────────────────────────
   const stripeBlocked = !form.isFree && stripeStatus && !stripeStatus.chargesEnabled;
 
   // ── Submit ────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (mode) => {
+    const isDraft = mode === "draft";
 
-    if (form.lessons.length === 0) {
-      onSuccess?.("error", "Add at least one lesson before submitting.");
-      return;
+    if (isDraft) {
+      if (!form.title || !form.title.trim()) {
+        onSuccess?.("error", "Please provide at least a course title to save a draft.");
+        return;
+      }
     }
-    const missingVideo = form.lessons.findIndex((l) => !l.videoFile);
-    if (missingVideo !== -1) {
-      onSuccess?.("error", `Please upload a video for Lesson ${missingVideo + 1}.`);
-      return;
-    }
-    if (stripeBlocked) {
-      onSuccess?.("error", "Connect your Stripe account before publishing a paid course.");
-      return;
+
+    if (!isDraft) {
+      if (!form.title || !form.title.trim()) {
+        onSuccess?.("error", "Course title is required to publish.");
+        return;
+      }
+      if (form.lessons.length === 0) {
+        onSuccess?.("error", "Add at least one lesson before submitting.");
+        return;
+      }
+      const missingVideo = form.lessons.findIndex((l) => !l.videoFile);
+      if (missingVideo !== -1) {
+        onSuccess?.("error", `Please upload a video for Lesson ${missingVideo + 1}.`);
+        return;
+      }
+      if (stripeBlocked) {
+        onSuccess?.("error", "Connect your Stripe account before publishing a paid course.");
+        return;
+      }
+
+      // Price validation for custom mode
+      if (!form.isFree && form.priceType === "custom") {
+        const p = parseFloat(form.price);
+        if (isNaN(p) || p < 10 || p > 100) {
+          onSuccess?.("error", "Custom price must be between $10 and $100.");
+          return;
+        }
+      }
+
+      // Quiz validation
+      if (form.quizzes && form.quizzes.length > 0) {
+        for (let i = 0; i < form.quizzes.length; i++) {
+          const q = form.quizzes[i];
+          for (let j = 0; j < q.questions.length; j++) {
+            const qst = q.questions[j];
+            if (qst.options.length < 2) {
+              onSuccess?.("error", `Quiz ${i+1}, Question ${j+1} must have at least 2 options.`);
+              return;
+            }
+            if (!qst.options.some(opt => opt.isCorrect)) {
+              onSuccess?.("error", `Quiz ${i+1}, Question ${j+1} must have at least one correct option.`);
+              return;
+            }
+          }
+        }
+      }
     }
 
     setLoading(true);
@@ -157,39 +309,60 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
       let thumbnailUrl = "";
       if (thumbnailFile) thumbnailUrl = await uploadFile(thumbnailFile);
 
-      // !! Upload videos sequentially to preserve order (Promise.all reorders by resolve time)
-      const videoUrls = [];
-      for (const lesson of form.lessons) {
-        videoUrls.push(await uploadFile(lesson.videoFile));
+      const lessons = [];
+      if (Array.isArray(form.lessons) && form.lessons.length > 0) {
+        // Upload videos sequentially to preserve order
+        const videoUrls = [];
+        for (const lesson of form.lessons) {
+          if (lesson.videoFile) {
+            videoUrls.push(await uploadFile(lesson.videoFile));
+          } else {
+            videoUrls.push(null);
+          }
+        }
+        lessons.push(
+          ...form.lessons.map((l, i) => ({
+            lessonId: l.lessonId,
+            title:    l.title,
+            duration: parseInt(l.duration) || 0,
+            mediaUrl: videoUrls[i],
+            order:    i,
+          }))
+        );
       }
 
       const payload = {
         title:       form.title,
+        description: form.description || "",
         isFree:      form.isFree,
         price:       form.isFree ? 0 : parseFloat(form.price) || 0,
         level:       form.level,
         categoryId:  form.categoryId,
         thumbnailUrl,
-        // lessons as an ordered array — backend now stores List<Lesson>
-        lessons: form.lessons.map((l, i) => ({
-          lessonId: l.lessonId,
-          title:    l.title,
-          duration: parseInt(l.duration) || 0,
-          mediaUrl: videoUrls[i],
-          order:    i,          // explicit order index as safety net
+        lessons,
+        quizzes: (form.quizzes || []).map(q => ({
+          title: q.title,
+          questions: q.questions.map(qst => ({
+            text: qst.text,
+            options: qst.options.map(opt => ({
+              text: opt.text,
+              isCorrect: opt.isCorrect,
+            }))
+          }))
         })),
-        quizzes: [],
       };
 
-      await api.post("/courses", payload);
+      if (isDraft) {
+        await api.post("/courses/draft", payload);
+        onSuccess?.("success", "Draft saved.");
+      } else {
+        await api.post("/courses", payload);
+        onSuccess?.("success", "Course published successfully! 🎉");
+      }
 
-      const msg = form.isFree
-        ? "Free course published successfully! 🎉"
-        : "Paid course submitted for admin review.";
-      onSuccess?.("success", msg);
       onClose();
     } catch (err) {
-      const msg = err?.response?.data || "Failed to submit course.";
+      const msg = err?.response?.data || (isDraft ? "Failed to save draft." : "Failed to submit course.");
       onSuccess?.("error", msg);
     } finally {
       setLoading(false);
@@ -197,30 +370,39 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
   };
 
   // ── Stripe warning banner ─────────────────────────────────────
-  const renderStripeBanner = () => {
-    if (form.isFree) return null;
+  const renderPriceInfo = () => {
     if (stripeLoading) return (
-      <div className="acf-stripe-banner loading">
-        <span className="acf-banner-spinner" /> Checking Stripe account…
+      <div className="acf-info-banner loading">
+        <span className="acf-banner-spinner" /> Checking account status…
       </div>
     );
-    if (!stripeStatus || !stripeStatus.hasAccount) return (
-      <div className="acf-stripe-banner warn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        You need to <strong>connect a Stripe account</strong> before creating paid courses.
-        Go to <em>Payments → Connect Stripe</em> first.
-      </div>
-    );
-    if (!stripeStatus.chargesEnabled) return (
-      <div className="acf-stripe-banner warn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Your Stripe account setup is <strong>incomplete</strong>. Finish onboarding to create paid courses.
-      </div>
-    );
+
+    if (form.isFree) {
+      return null;
+    }
+
+    if (!stripeStatus || !stripeStatus.hasAccount) {
+      return (
+        <div className="acf-info-banner warn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Connect Stripe to create paid courses. Go to <strong>Payments → Connect Stripe</strong>.
+        </div>
+      );
+    }
+
+    if (!stripeStatus.chargesEnabled) {
+      return (
+        <div className="acf-info-banner warn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Finish your Stripe onboarding to enable paid courses.
+        </div>
+      );
+    }
+
     return (
-      <div className="acf-stripe-banner ok">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Stripe account <strong>connected</strong> — payments are active.
+      <div className="acf-info-banner ok">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Stripe is active — ready to publish paid courses.
       </div>
     );
   };
@@ -236,7 +418,7 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
         <div className="acf-header">
           <div className="acf-header-text">
             <h2 className="acf-title">Create New Course</h2>
-            <p className="acf-subtitle">Fill in the details below — your course will be reviewed before going live.</p>
+            <p className="acf-subtitle">Fill in the details below — your course will be published immediately.</p>
           </div>
           <button className="acf-close" onClick={onClose} aria-label="Close">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -246,7 +428,7 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
         </div>
 
         {/* ── Body ── */}
-        <form className="acf-body" onSubmit={handleSubmit}>
+        <form className="acf-body" onSubmit={(e) => { e.preventDefault(); handleSubmit("publish"); }}>
 
           {/* Step 1 — Course info */}
           <div className="acf-section">
@@ -266,6 +448,18 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
               />
             </div>
 
+            <div className="acf-field">
+              <label className="acf-label">Description <span className="acf-optional">(optional)</span></label>
+              <textarea
+                className="acf-input"
+                rows={4}
+                placeholder="Describe what students will learn, who this course is for, and what makes it special…"
+                value={form.description}
+                onChange={(e) => handleField("description", e.target.value)}
+                style={{ resize: "vertical", minHeight: 96 }}
+              />
+            </div>
+
             <div className="acf-row">
               <div className="acf-field">
                 <label className="acf-label">Difficulty Level <span className="acf-req">*</span></label>
@@ -278,29 +472,31 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
                 </div>
               </div>
 
-              <div className="acf-field">
-                <label className="acf-label">Category <span className="acf-req">*</span></label>
-                <div className="acf-select-wrap">
-                  {catsLoading ? (
-                    <div className="acf-input acf-loading-text">Loading categories…</div>
-                  ) : (
-                    <>
-                      <select
-                        className="acf-select"
-                        value={form.categoryId}
-                        onChange={(e) => handleField("categoryId", e.target.value)}
-                        required
-                      >
-                        {categories.length === 0 && <option value="">No categories found</option>}
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                      <svg className="acf-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </>
-                  )}
+              {(!instructor?.specialization || !categories.find(c => c.name.toLowerCase() === instructor.specialization.toLowerCase())) && (
+                <div className="acf-field">
+                  <label className="acf-label">Category <span className="acf-req">*</span></label>
+                  <div className="acf-select-wrap">
+                    {catsLoading ? (
+                      <div className="acf-input acf-loading-text">Loading categories…</div>
+                    ) : (
+                      <>
+                        <select
+                          className="acf-select"
+                          value={form.categoryId}
+                          onChange={(e) => handleField("categoryId", e.target.value)}
+                          required
+                        >
+                          {categories.length === 0 && <option value="">No categories found</option>}
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        <svg className="acf-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -363,42 +559,89 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                 Free
               </button>
-              <button
-                type="button"
-                className={`acf-pricing-tab ${!form.isFree ? "active" : ""}`}
-                onClick={() => handleField("isFree", false)}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                Paid
-              </button>
+              <span title={(!stripeStatus || !stripeStatus.chargesEnabled) ? "You must activate a stripe account first" : ""}>
+                <button
+                  type="button"
+                  className={`acf-pricing-tab ${!form.isFree ? "active" : ""}`}
+                  disabled={!stripeStatus || !stripeStatus.chargesEnabled}
+                  onClick={() => handleField("isFree", false)}
+                  style={(!stripeStatus || !stripeStatus.chargesEnabled) ? { pointerEvents: "none" } : {}}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                  Paid
+                </button>
+              </span>
             </div>
 
-            {/* Stripe banner */}
-            {renderStripeBanner()}
+            {/* Combined Info Banner */}
+            {renderPriceInfo()}
 
             {!form.isFree && (
-              <div className="acf-field" style={{ marginTop: 14 }}>
-                <label className="acf-label">Price (USD) <span className="acf-req">*</span></label>
-                <div className="acf-price-wrap">
-                  <span className="acf-currency">$</span>
-                  <input
-                    className="acf-input acf-price-input"
-                    type="number" min="0.50" step="0.01"
-                    placeholder="49.99"
-                    value={form.price}
-                    onChange={(e) => handleField("price", e.target.value)}
-                    required
-                  />
+              <div className="acf-pricing-details">
+                {/* Price Type Selector */}
+                <div className="acf-price-type-selector">
+                  <button
+                    type="button"
+                    className={`acf-pts-btn ${form.priceType === "predefined" ? "active" : ""}`}
+                    onClick={() => {
+                      handleField("priceType", "predefined");
+                      if (!PRICE_TIERS.includes(form.price)) {
+                        handleField("price", PRICE_TIERS[0]);
+                      }
+                    }}
+                  >
+                    Tiers
+                  </button>
+                  <button
+                    type="button"
+                    className={`acf-pts-btn ${form.priceType === "custom" ? "active" : ""}`}
+                    onClick={() => handleField("priceType", "custom")}
+                  >
+                    Custom
+                  </button>
                 </div>
-                <p className="acf-field-hint">You keep 80% · Platform retains 20%</p>
-              </div>
-            )}
 
-            {form.isFree && (
-              <p className="acf-free-note">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Free courses are published immediately — no admin review required.
-              </p>
+                {form.priceType === "predefined" ? (
+                  <div className="acf-field">
+                    <label className="acf-label">Select Price Tier <span className="acf-req">*</span></label>
+                    <div className="acf-price-tiers">
+                      {PRICE_TIERS.map((tier) => (
+                        <button
+                          key={tier}
+                          type="button"
+                          className={`acf-tier-chip ${form.price === tier ? "active" : ""}`}
+                          onClick={() => handleField("price", tier)}
+                        >
+                          ${tier}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="acf-field">
+                    <label className="acf-label">Custom Price ($) <span className="acf-req">*</span></label>
+                    <div className="acf-price-wrap">
+                      <span className="acf-currency">$</span>
+                      <input
+                        className="acf-input acf-price-input"
+                        type="number"
+                        min="10"
+                        max="100"
+                        step="1"
+                        placeholder="e.g. 45"
+                        value={form.price}
+                        onChange={(e) => handleField("price", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <p className="acf-field-hint">Range: $10 – $100</p>
+                  </div>
+                )}
+
+                <div className="acf-price-earnings">
+                  <p className="acf-field-hint">You keep 80% · Platform retains 20%</p>
+                </div>
+              </div>
             )}
           </div>
 
@@ -490,14 +733,112 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
             </button>
           </div>
 
+          {/* Step 5 — Quizzes */}
+          <div className="acf-section">
+            <div className="acf-section-label">
+              <span className="acf-step">5</span>
+              Quizzes (Optional)
+              <span className="acf-lesson-count">{(form.quizzes || []).length}</span>
+            </div>
+
+            <div className="acf-lessons">
+              {(form.quizzes || []).map((quiz, qIdx) => (
+                <div className="acf-lesson" key={quiz.quizId}>
+                  <div className="acf-lesson-head">
+                    <div className="acf-lesson-num">
+                      <span>#{qIdx + 1}</span>
+                    </div>
+                    <span className="acf-lesson-tag">Quiz {qIdx + 1}</span>
+                    <button type="button" className="acf-lesson-remove"
+                      onClick={() => removeQuiz(qIdx)} title="Remove quiz">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="acf-field">
+                    <label className="acf-label">Quiz Title <span className="acf-req">*</span></label>
+                    <input className="acf-input" placeholder="e.g. Mid-term Assessment"
+                      value={quiz.title}
+                      onChange={(e) => handleQuizField(qIdx, "title", e.target.value)}
+                      required />
+                  </div>
+
+                  <div className="acf-questions" style={{ marginTop: '16px', paddingLeft: '16px', borderLeft: '2px solid #e8e4da' }}>
+                    <h4 style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>Questions & Answers</h4>
+                    {quiz.questions.map((qst, qstIdx) => (
+                      <div key={qst.questionId} style={{ marginBottom: '24px', padding: '16px', background: '#fafafa', borderRadius: '8px', border: '1px solid #eee' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#444' }}>Q{qstIdx + 1}:</span>
+                          <input className="acf-input" placeholder="e.g. What is the main characteristic of ballet?"
+                            style={{ flex: 1 }}
+                            value={qst.text}
+                            onChange={(e) => handleQuestionField(qIdx, qstIdx, "text", e.target.value)}
+                            required />
+                          {quiz.questions.length > 1 && (
+                            <button type="button" className="acf-lesson-remove" style={{ background: 'none' }}
+                              onClick={() => removeQuestion(qIdx, qstIdx)} title="Remove question">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+
+                        <div style={{ paddingLeft: '24px' }}>
+                          <h5 style={{ fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Options</h5>
+                          {qst.options.map((opt, optIdx) => (
+                            <div key={opt.optionId} style={{ display: 'flex', gap: '10px', marginBottom: '8px', alignItems: 'center' }}>
+                              <input type="checkbox" 
+                                checked={opt.isCorrect} 
+                                onChange={(e) => handleOptionField(qIdx, qstIdx, optIdx, "isCorrect", e.target.checked)}
+                                title="Mark as correct answer"
+                                style={{ width: '16px', height: '16px', accentColor: 'var(--id-gold)' }}
+                              />
+                              <input className="acf-input" placeholder={`Option ${optIdx + 1}`}
+                                style={{ flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                                value={opt.text}
+                                onChange={(e) => handleOptionField(qIdx, qstIdx, optIdx, "text", e.target.value)}
+                                required />
+                              {qst.options.length > 2 && (
+                                <button type="button" className="acf-lesson-remove" style={{ background: 'none' }}
+                                  onClick={() => removeOption(qIdx, qstIdx, optIdx)} title="Remove option">
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button type="button" className="acf-add-lesson" style={{ marginTop: '4px', padding: '4px 8px', fontSize: '12px', border: '1px dashed #ccc', background: 'transparent' }} onClick={() => addOption(qIdx, qstIdx)}>
+                            + Add Option
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" className="acf-add-lesson" style={{ marginTop: '8px', padding: '8px 14px', fontSize: '13px', border: '1px solid #e8e4da', background: '#fff', fontWeight: '500' }} onClick={() => addQuestion(qIdx)}>
+                      + Add Question
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button type="button" className="acf-add-lesson" onClick={addQuiz}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add a quiz (optional)
+            </button>
+          </div>
+
         </form>
 
         {/* ── Footer ── */}
         <div className="acf-footer">
           <div className="acf-footer-meta">
-            {!form.isFree
-              ? <span>Paid · requires admin approval</span>
-              : <span>Free · publishes immediately</span>}
+            <span>All courses publish immediately</span>
           </div>
           <div className="acf-footer-actions">
             <button className="acf-btn-cancel" type="button" onClick={onClose}>Cancel</button>
@@ -505,13 +846,23 @@ export default function AddCourseForm({ onClose, onSuccess, instructorId }) {
               className="acf-btn-submit"
               type="button"
               disabled={loading || stripeBlocked || stripeLoading}
-              onClick={handleSubmit}
+              onClick={() => handleSubmit("publish")}
             >
               {loading ? (
                 <><span className="acf-spin" /> Uploading…</>
               ) : (
-                form.isFree ? "Publish Course" : "Submit for Review"
+                "Publish Course"
               )}
+            </button>
+            <button
+              className="acf-btn-cancel"
+              type="button"
+              disabled={loading}
+              onClick={() => handleSubmit("draft")}
+              title="Save now and publish later"
+              style={{ marginLeft: 10 }}
+            >
+              Save Draft
             </button>
           </div>
         </div>

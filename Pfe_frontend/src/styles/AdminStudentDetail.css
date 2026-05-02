@@ -221,6 +221,135 @@
   color: var(--ad-muted);
 }
 
+/* Skeletons */
+.asd-skeleton-card {
+  background: white;
+  border: 1.5px solid var(--ad-border);
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.asd-skeleton-thumb {
+  width: 80px;
+  height: 50px;
+  border-radius: 10px;
+  background: var(--ad-bg);
+}
+
+.asd-skeleton-info {
+  flex: 1;
+}
+
+.asd-skeleton-line {
+  height: 12px;
+  background: var(--ad-bg);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.asd-skeleton-line.title { width: 60%; }
+.asd-skeleton-line.meta { width: 40%; height: 8px; }
+
+.asd-skeleton-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: asd-shimmer 1.5s infinite;
+}
+
+@keyframes asd-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.asd-course-item {
+  background: white;
+  border: 1.5px solid var(--ad-border);
+  border-radius: 20px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.asd-course-item:hover {
+  border-color: var(--ad-gold);
+  transform: translateY(-2px);
+  box-shadow: var(--ad-shadow-md);
+}
+
+.asd-course-thumb-wrap {
+  position: relative;
+  width: 90px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.asd-course-thumb, .asd-course-thumb-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.asd-course-thumb-fallback {
+  background: var(--ad-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ad-muted);
+}
+
+.asd-course-type-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.asd-course-type-badge.free { background: #f0faf4; color: #1a7f37; border: 1px solid #a8dfc0; }
+.asd-course-type-badge.paid { background: var(--ad-gold-tint); color: var(--ad-gold-dark); border: 1px solid var(--ad-gold-border); }
+
+.asd-course-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.asd-course-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ad-text);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asd-course-meta {
+  font-size: 0.8rem;
+  color: var(--ad-muted);
+  font-weight: 500;
+  margin: 0;
+}
+
 @keyframes aideFadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }

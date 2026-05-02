@@ -109,9 +109,36 @@ body {
 
 /* ─────────────────── FEATURES ─────────────────── */
 .features-section {
-  padding: 100px 60px;
-  background: #fdfcf8;
+  padding: 120px 60px;
+  background: linear-gradient(180deg, #fdfcf8 0%, #f8f4ec 100%);
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative background elements */
+.features-section::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(184, 156, 77, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.features-section::after {
+  content: '';
+  position: absolute;
+  bottom: -150px;
+  left: -150px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(184, 156, 77, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .section-eyebrow {
@@ -123,10 +150,25 @@ body {
 
 .section-title {
   font-family: 'Playfair Display', serif;
-  font-size: 46px;
+  font-size: 52px;
   font-weight: 500;
   color: #1a1a1a;
-  margin-bottom: 60px;
+  margin-bottom: 70px;
+  position: relative;
+  display: inline-block;
+}
+
+/* Elegant underline accent */
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #b89c4d, transparent);
+  border-radius: 2px;
 }
 
 .highlight-italic { font-style: italic; color: #b89c4d; }
@@ -134,23 +176,43 @@ body {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  max-width: 1200px;
+  gap: 32px;
+  max-width: 1280px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .feature-card {
-  border: 1px solid #e8e4d8;
-  border-radius: 10px;
-  padding: 36px 28px 40px;
+  border: 1px solid rgba(232, 228, 216, 0.6);
+  border-radius: 20px;
+  padding: 42px 32px 46px;
   text-align: left;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
   /* individual card transition for stagger */
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
-              transform 0.7s cubic-bezier(0.22,1,0.36,1),
-              box-shadow 0.25s ease;
+  transform: translateY(40px);
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Shimmer effect on top */
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(184, 156, 77, 0.08), transparent);
+  transition: left 0.8s ease;
+}
+
+.feature-card:hover::before {
+  left: 100%;
 }
 
 /* cards become visible when parent gets .visible */
@@ -160,17 +222,42 @@ body {
 }
 
 .feature-card:hover {
-  box-shadow: 0 10px 32px rgba(184,156,77,0.13);
-  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 48px rgba(184, 156, 77, 0.18), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-8px) !important;
+  border-color: rgba(184, 156, 77, 0.3);
+  background: rgba(255, 255, 255, 0.95);
 }
 
-.feature-icon { margin-bottom: 28px; }
+.feature-icon { 
+  margin-bottom: 32px;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: scale(1.3);
+  color: #b89c4d;
+}
+
+.feature-icon svg {
+  stroke-width: 1.5;
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.45) rotate(5deg);
+  color: #a07c2e;
+}
 
 .feature-title {
   font-family: 'Playfair Display', serif;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+  transition: color 0.3s ease;
+}
+
+.feature-card:hover .feature-title {
+  color: #b89c4d;
 }
 
 .feature-desc { font-size: 13.5px; color: #777; line-height: 1.65; }
@@ -222,6 +309,8 @@ body {
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: opacity 0.2s ease, transform 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
 }
 .movement-btn:hover { opacity: 0.88; transform: translateY(-2px); }
 
@@ -327,8 +416,8 @@ body {
 /* The visible window — clips the sliding track */
 .instructors-track-outer {
   overflow: hidden;
-  /* 5 cards × 200px + 4 gaps × 28px = 1112px */
-  width: calc(5 * 200px + 4 * 28px);
+  /* 5 cards × 220px + 4 gaps × 28px = 1212px */
+  width: calc(5 * 220px + 4 * 28px);
   max-width: 100%;
 }
 
@@ -336,22 +425,26 @@ body {
 .instructors-track {
   display: flex;
   gap: 28px;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
+}
+
+/* Add smooth animation to instructor cards */
+.instructor-card {
+  animation: cardFadeIn 0.4s ease-out;
 }
 
 /* ── Individual card ── */
 .instructor-card {
-  flex: 0 0 200px;
-  width: 200px;
+  flex: 0 0 220px;
+  width: 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   background: #fff;
   border: 1px solid #e8e4d8;
   border-radius: 16px;
-  padding: 36px 20px 28px;
+  padding: 40px 22px 32px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
@@ -363,8 +456,8 @@ body {
 
 /* ── Avatar ── */
 .instructor-avatar {
-  width: 110px;
-  height: 110px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   border: 3px solid #fff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -390,7 +483,7 @@ body {
 }
 
 .avatar-initials {
-  font-size: 26px;
+  font-size: 34px;
   font-weight: 600;
   color: #fff;
   font-family: 'Playfair Display', serif;
@@ -444,6 +537,18 @@ body {
   pointer-events: none;
 }
 
+/* Card rotation animation */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ── CTA text ── */
 .instructors-empty {
   color: #888;
@@ -469,21 +574,21 @@ body {
 @media (max-width: 1200px) {
   .instructors-track-outer {
     /* show 4 cards */
-    width: calc(4 * 200px + 3 * 28px);
+    width: calc(4 * 220px + 3 * 28px);
   }
 }
 
 @media (max-width: 960px) {
   .instructors-track-outer {
     /* show 3 cards */
-    width: calc(3 * 200px + 2 * 28px);
+    width: calc(3 * 220px + 2 * 28px);
   }
 }
 
 @media (max-width: 720px) {
   .instructors-track-outer {
     /* show 2 cards */
-    width: calc(2 * 200px + 1 * 28px);
+    width: calc(2 * 220px + 1 * 28px);
   }
   .instructors-section { padding: 60px 24px; }
 }
@@ -491,7 +596,7 @@ body {
 @media (max-width: 480px) {
   .instructors-track-outer {
     /* show 1 card */
-    width: 200px;
+    width: 220px;
   }
 }
 /* ─────────────────── RESPONSIVE ─────────────────── */

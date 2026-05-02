@@ -36,7 +36,7 @@ function resolveThumbnail(thumbnailUrl) {
   return `${BASE_URL}/api/files/${thumbnailUrl}`;
 }
 
-export default function InstructorCourseCard({ course }) {
+export default function InstructorCourseCard({ course, onClick }) {
   const levelStyle  = LEVEL_COLORS[course.level]  ?? LEVEL_COLORS.BEGINNER;
   const statusStyle = STATUS_COLORS[course.status] ?? STATUS_COLORS.DRAFT;
   const thumbSrc    = resolveThumbnail(course.thumbnailUrl);
@@ -45,7 +45,19 @@ export default function InstructorCourseCard({ course }) {
   const quizCount   = Array.isArray(course.quizzes) ? course.quizzes.length : 0;
 
   return (
-    <div className="icc-card">
+    <div 
+      className="icc-card" 
+      onClick={onClick}
+      style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    >
       {/* Thumbnail */}
       <div className="icc-thumb">
         {thumbSrc ? (

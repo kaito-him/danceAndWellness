@@ -26,6 +26,8 @@ public class EnrollmentService {
 
     private final CourseRepository      courseRepository;
     private final EnrollmentRepository  enrollmentRepository;
+    private final NotificationService   notificationService;
+    private final BadgeEvaluationService badgeEvaluationService;
 
     @PostConstruct
     public void init() {
@@ -43,7 +45,8 @@ public class EnrollmentService {
             throw new RuntimeException("Course is not free");
 
         // Idempotent — already enrolled, just return it
-        return enrollmentRepository
+        boolean alreadyEnrolled = enrollmentRepository.existsByStudentIdAndCourseId(studentId, courseId);
+        Enrollment enrollment = enrollmentRepository
             .findByStudentIdAndCourseId(studentId, courseId)
             .orElseGet(() -> enrollmentRepository.save(
                 Enrollment.builder()
@@ -53,6 +56,11 @@ public class EnrollmentService {
                     .enrolledAt(LocalDateTime.now())
                     .build()
             ));
+        if (!alreadyEnrolled) {
+            notifyInstructorEnrollment(course, enrollment, studentId);
+            badgeEvaluationService.evaluate(studentId);
+        }
+        return enrollment;
     }
 
     // ── PAID step 1: create Stripe PaymentIntent ──────────────────────────
@@ -99,7 +107,8 @@ public class EnrollmentService {
                 + intent.getStatus());
 
         // Idempotent guard
-        return enrollmentRepository
+        boolean alreadyConfirmed = enrollmentRepository.findByPaymentIntentId(req.getPaymentIntentId()).isPresent();
+        Enrollment enrollment = enrollmentRepository
             .findByPaymentIntentId(req.getPaymentIntentId())
             .orElseGet(() -> enrollmentRepository.save(
                 Enrollment.builder()
@@ -111,10 +120,50 @@ public class EnrollmentService {
                     .enrolledAt(LocalDateTime.now())
                     .build()
             ));
+        Course course = courseRepository.findById(req.getCourseId())
+            .orElseThrow(() -> new RuntimeException("Course not found"));
+        if (!alreadyConfirmed) {
+            notifyInstructorEnrollment(course, enrollment, req.getStudentId());
+            // Notify the student about successful purchase
+            notificationService.create(
+                req.getStudentId(),
+                "You have successfully enrolled in \"" + course.getTitle() + "\". Enjoy learning!",
+                "PURCHASE_SUCCESS",
+                course.getCourseId(),
+                false
+            );
+            badgeEvaluationService.evaluate(req.getStudentId());
+        }
+        return enrollment;
     }
 
     // ── Shared utility ────────────────────────────────────────────────────
     public boolean isEnrolled(String studentId, String courseId) {
         return enrollmentRepository.existsByStudentIdAndCourseId(studentId, courseId);
+    }
+
+    // ── CANCEL free enrollment ────────────────────────────────────────────
+    public void cancelFreeEnrollment(String studentId, String courseId) {
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        if (!Boolean.TRUE.equals(course.getIsFree()))
+            throw new RuntimeException("Cannot cancel a paid enrollment");
+
+        enrollmentRepository
+            .findByStudentIdAndCourseId(studentId, courseId)
+            .ifPresent(enrollmentRepository::delete);
+    }
+
+    private void notifyInstructorEnrollment(Course course, Enrollment enrollment, String studentId) {
+        if (course.getInstructor() == null || course.getInstructor().getUserId() == null) return;
+        if (enrollment.getEnrolledAt() == null) return;
+        notificationService.create(
+            course.getInstructor().getUserId(),
+            "A student enrolled in your course \"" + course.getTitle() + "\".",
+            "COURSE_ENROLLMENT",
+            course.getCourseId(),
+            false
+        );
     }
 }

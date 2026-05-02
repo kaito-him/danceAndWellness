@@ -1,9 +1,11 @@
 package com.example.demo.entities;
 
+import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.*;
+
 @Document(collection = "Questions")
 @Data
 @AllArgsConstructor
@@ -12,6 +14,6 @@ public class Question {
 	@Id
 	private String questionId;
 	private String text;
-	private boolean isCorrect;
-
+	private List<AnswerOption> options;
 }
+

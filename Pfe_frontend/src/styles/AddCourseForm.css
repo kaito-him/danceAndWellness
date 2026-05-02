@@ -218,6 +218,7 @@
 }
 
 .acf-req { color: var(--acf-gold); margin-left: 2px; }
+.acf-optional { color: #aaa; font-weight: 400; font-size: 11px; margin-left: 4px; }
 
 .acf-input {
   border: 1.5px solid var(--acf-border);
@@ -455,6 +456,13 @@
   font-weight: 600;
 }
 
+.acf-pricing-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--acf-surface2);
+  border-color: var(--acf-border-soft);
+}
+
 /* Price input */
 .acf-price-wrap {
   position: relative;
@@ -475,50 +483,125 @@
   padding-left: 28px !important;
 }
 
-.acf-free-note {
+/* Tiered & Custom Pricing Styles */
+.acf-pricing-details {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: acf-fadeIn 0.3s ease;
+}
+
+.acf-price-type-selector {
+  display: flex;
+  background: var(--acf-surface2);
+  border: 1px solid var(--acf-border);
+  padding: 4px;
+  border-radius: var(--acf-radius-md);
+  gap: 4px;
+}
+
+.acf-pts-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: none;
+  font-family: var(--acf-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--acf-muted);
+  cursor: pointer;
+  border-radius: var(--acf-radius-sm);
+  transition: var(--acf-transition);
+}
+
+.acf-pts-btn.active {
+  background: var(--acf-surface);
+  color: var(--acf-gold-dark);
+  box-shadow: var(--acf-shadow-sm);
+}
+
+.acf-price-tiers {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.acf-tier-chip {
+  flex: 1;
+  padding: 12px;
+  border: 1.5px solid var(--acf-border);
+  background: var(--acf-surface);
+  border-radius: var(--acf-radius-md);
+  font-family: var(--acf-font-body);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--acf-text-sub);
+  cursor: pointer;
+  transition: var(--acf-transition);
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--acf-green);
-  background: var(--acf-green-tint);
-  border: 1px solid rgba(34, 120, 60, 0.15);
-  border-radius: var(--acf-radius-sm);
-  padding: 9px 14px;
-  font-weight: 500;
+  justify-content: center;
+  box-shadow: var(--acf-shadow-sm);
 }
+
+.acf-tier-chip:hover {
+  border-color: var(--acf-gold-border);
+  background: var(--acf-gold-tint);
+  color: var(--acf-gold-dark);
+}
+
+.acf-tier-chip.active {
+  border-color: var(--acf-gold);
+  background: var(--acf-gold-tint2);
+  color: var(--acf-gold-dark);
+  box-shadow: 0 4px 12px rgba(184, 156, 77, 0.15);
+  transform: translateY(-1px);
+}
+
+.acf-price-earnings {
+  border-top: 1px dashed var(--acf-border);
+  padding-top: 12px;
+}
+
+/* ── Removed acf-free-note in favor of combined info banner ── */
 
 /* ══════════════════════════════════════════════════════════
    STRIPE BANNER
 ══════════════════════════════════════════════════════════ */
-.acf-stripe-banner {
+/* ══════════════════════════════════════════════════════════
+   INFO BANNERS (Unified)
+   Used for Stripe status and Free course info
+══════════════════════════════════════════════════════════ */
+.acf-info-banner {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin-top: 14px;
-  padding: 11px 14px;
-  border-radius: var(--acf-radius-sm);
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--acf-radius-md);
   font-size: 13px;
   font-family: var(--acf-font-body);
-  line-height: 1.5;
+  line-height: 1.4;
+  border: 1px solid transparent;
 }
 
-.acf-stripe-banner.warn {
-  background: var(--acf-orange-tint);
-  border: 1px solid var(--acf-orange-border);
-  color: var(--acf-orange);
+.acf-info-banner.warn {
+  background: #fff8f1;
+  border-color: #ffe4cc;
+  color: #c47c1a;
 }
 
-.acf-stripe-banner.ok {
-  background: var(--acf-green-tint);
-  border: 1px solid rgba(34, 120, 60, 0.18);
-  color: var(--acf-green);
+.acf-info-banner.free,
+.acf-info-banner.ok {
+  background: #f1faf3;
+  border-color: #d1ead9;
+  color: #22783c;
 }
 
-.acf-stripe-banner.loading {
-  background: var(--acf-surface3);
-  border: 1px solid var(--acf-border-soft);
+.acf-info-banner.loading {
+  background: var(--acf-surface2);
+  border-color: var(--acf-border-soft);
   color: var(--acf-muted);
 }
 

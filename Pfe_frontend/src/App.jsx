@@ -9,10 +9,7 @@ import ProtectedRoute from "../src/components/auth/ProtectedRoute";
 import RoleSelection from "../src/components/RoleSelection";
 import StudentSignup from "../src/components/StudentSignup";
 import InstructorSignup from "../src/components/InstructorSignup";
-import CoursePage from "./components/Coursepage";
 import CoursesPage from "./components/Coursespage";
-import LessonCardsPage from "./components/Lessoncardspage";
-import LessonPlayerPage from "./components/Lessonplayerpage";
 import CheckoutPage from "./components/CheckoutPage";
 
 function App() {
@@ -28,18 +25,13 @@ function App() {
         <Route path="/signup/student" element={<StudentSignup />} />
         <Route path="/signup/instructor" element={<InstructorSignup />} />
 
-        {/* ── Courses ── */}
+        {/* ── Courses (Public Catalog only) ── */}
         <Route path="/courses" element={<CoursesPage />} />
-        <Route path="/courses/:courseId" element={<CoursePage />} />
-
-        {/* ── Lessons ── */}
-        <Route path="/courses/:courseId/lessons" element={<LessonCardsPage />} />
-        <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPlayerPage />} />
 
         {/* ── Protected ── */}
         <Route path="/admin" element={<ProtectedRoute role="ADMIN"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/instructor" element={<ProtectedRoute role="INSTRUCTOR"><InstructorDashboard /></ProtectedRoute>} />
-        <Route path="/student" element={<ProtectedRoute role="STUDENT"><StudentDashboard /></ProtectedRoute>} />
+        <Route path="/student/*" element={<ProtectedRoute role="STUDENT"><StudentDashboard /></ProtectedRoute>} />
         <Route path="/checkout/:courseId" element={<CheckoutPage />} />
       </Routes>
     </BrowserRouter>

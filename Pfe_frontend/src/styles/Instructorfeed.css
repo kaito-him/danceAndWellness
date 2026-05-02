@@ -89,6 +89,169 @@
 }
 
 /* ══════════════════════════════════════════════
+   FILTER BAR
+   ══════════════════════════════════════════════ */
+.if-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--if-surface);
+  border: 1px solid var(--if-border);
+  padding: 12px 16px;
+  border-radius: var(--if-radius-lg);
+  margin-bottom: 2rem;
+  box-shadow: var(--if-shadow-sm);
+  flex-wrap: wrap;
+}
+
+.if-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+}
+
+.if-search-submit-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--if-muted);
+  transition: var(--if-transition);
+  z-index: 2;
+}
+
+.if-search-submit-btn:hover {
+  color: var(--if-gold);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.if-search-icon {
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.if-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 44px 0 46px; /* Increased right padding for clear button */
+  border: 1.5px solid var(--if-border-soft);
+  border-radius: var(--if-radius-md);
+  font-family: var(--if-font-body);
+  font-size: 14px;
+  color: var(--if-text);
+  background: var(--if-surface2);
+  transition: var(--if-transition);
+}
+
+.if-search-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--if-border-soft);
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--if-muted);
+  font-size: 14px;
+  transition: var(--if-transition);
+  z-index: 2;
+}
+
+.if-search-clear-btn:hover {
+  background: var(--if-border);
+  color: var(--if-text);
+}
+
+.if-search-input:focus {
+  outline: none;
+  border-color: var(--if-gold);
+  background: var(--if-surface);
+  box-shadow: 0 0 0 3px var(--if-gold-tint);
+}
+
+.if-select-group {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.if-select-wrap {
+  position: relative;
+  min-width: 160px;
+}
+
+.if-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 34px 0 14px;
+  border: 1.5px solid var(--if-border-soft);
+  border-radius: var(--if-radius-md);
+  font-family: var(--if-font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--if-text-sub);
+  background: var(--if-surface2);
+  cursor: pointer;
+  appearance: none;
+  transition: var(--if-transition);
+}
+
+.if-select:hover {
+  border-color: var(--if-gold-border);
+}
+
+.if-select:focus {
+  outline: none;
+  border-color: var(--if-gold);
+  background: var(--if-surface);
+}
+
+.if-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--if-muted);
+  pointer-events: none;
+}
+
+.if-results-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--if-muted);
+  padding: 0 8px;
+  letter-spacing: 0.02em;
+  margin-left: auto;
+}
+
+@media (max-width: 850px) {
+  .if-results-count {
+    width: 100%;
+    margin-left: 0;
+    order: 3;
+  }
+}
+
+/* ══════════════════════════════════════════════
    GRID — exactly 3 per row, rectangle cards
 ══════════════════════════════════════════════ */
 .if-grid {

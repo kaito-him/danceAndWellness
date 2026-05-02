@@ -172,7 +172,64 @@
 
 /* ── Courses ── */
 .aid-courses-section { /* no extra bg; grid handles it */ }
-.aid-courses-header  { margin-bottom: 16px; }
+.aid-courses-header  { 
+  margin-bottom: 20px; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.aid-courses-filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.aid-search-wrap {
+  position: relative;
+}
+
+.aid-search-input {
+  padding: 8px 12px;
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-sm);
+  background: var(--ad-surface);
+  color: var(--ad-text);
+  font-size: 13px;
+  width: 220px;
+  outline: none;
+  transition: var(--ad-transition);
+}
+
+.aid-search-input:focus {
+  border-color: var(--ad-gold);
+  box-shadow: 0 0 0 3px var(--ad-gold-tint);
+}
+
+.aid-status-select {
+  padding: 8px 12px;
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-sm);
+  background: var(--ad-surface);
+  color: var(--ad-text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: var(--ad-transition);
+}
+
+.aid-status-select:focus {
+  border-color: var(--ad-gold);
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.2; }
+  100% { opacity: 0.6; }
+}
 .aid-courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));

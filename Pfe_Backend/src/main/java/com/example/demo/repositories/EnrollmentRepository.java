@@ -11,7 +11,11 @@ public interface EnrollmentRepository extends MongoRepository<Enrollment, String
     boolean existsByStudentIdAndCourseId(String studentId, String courseId);
     Optional<Enrollment> findByStudentIdAndCourseId(String studentId, String courseId);
     Optional<Enrollment> findByPaymentIntentId(String paymentIntentId);
-    
+    List<Enrollment> findByStudentIdAndType(String studentId, Enrollment.EnrollmentType type);
     List<Enrollment> findByCourseIdIn(Collection<String> courseIds);
     List<Enrollment> findByStudentId(String studentId);
+    List<Enrollment> findByCourseId(String courseId);
+    
+    long countByCourseId(String courseId);
+    long countByStudentId(String studentId);
 }

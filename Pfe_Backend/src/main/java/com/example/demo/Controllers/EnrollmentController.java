@@ -48,4 +48,13 @@ public class EnrollmentController {
             "enrolled", enrollmentService.isEnrolled(studentId, courseId)
         ));
     }
+
+    // ── CANCEL free enrollment ────────────────────────────────────────────
+    @DeleteMapping("/cancel-free")
+    public ResponseEntity<?> cancelFree(
+            @RequestParam String studentId,
+            @RequestParam String courseId) {
+        enrollmentService.cancelFreeEnrollment(studentId, courseId);
+        return ResponseEntity.ok(Map.of("cancelled", true));
+    }
 }

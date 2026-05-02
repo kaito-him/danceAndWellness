@@ -28,11 +28,25 @@ public class UserController {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found."));
         return ResponseEntity.ok(Map.of(
+            "userId",   user.getUserId(),
             "username", user.getUsername(),
             "email",    user.getEmail(),
             "role",     user.getRole(),
             "photo",    user.getPhoto() != null ? user.getPhoto() : ""
         ));
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<?> getUserById(@PathVariable String userId) {
+        return userRepository.findById(userId)
+                .<ResponseEntity<?>>map(user -> ResponseEntity.ok(Map.of(
+                        "userId", user.getUserId(),
+                        "username", user.getUsername(),
+                        "email", user.getEmail(),
+                        "role", user.getRole(),
+                        "photo", user.getPhoto() != null ? user.getPhoto() : ""
+                )))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/me")

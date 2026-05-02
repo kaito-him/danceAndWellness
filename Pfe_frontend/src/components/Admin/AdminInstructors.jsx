@@ -130,7 +130,7 @@ function InstructorCard({ instructor, onSelect, onHighlight, onBan, onUnban }) {
 }
 
 /* ─── Main page ───────────────────────────────────────────────────────── */
-export default function AdminInstructors() {
+export default function AdminInstructors({ onCourseClick }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Bootstrap state from URL so a refresh lands in the same spot
@@ -269,7 +269,14 @@ export default function AdminInstructors() {
   }, {});
 
   if (selected) {
-    return <AdminInstructorDetail instructor={selected} onBack={handleBack} />;
+    return <AdminInstructorDetail 
+      instructor={selected} 
+      onBack={handleBack} 
+      onCourseClick={(cid) => onCourseClick(cid, selected.id)}
+      onHighlight={handleHighlight}
+      onBan={() => setBanCandidate(selected)}
+      onUnban={() => setUnbanCandidate(selected)}
+    />;
   }
 
   return (

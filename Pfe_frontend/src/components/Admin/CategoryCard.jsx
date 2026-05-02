@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { FiGrid } from "react-icons/fi";
+import { FiGrid, FiTrash2 } from "react-icons/fi";
 import api from "./../services/api";
 
 /**
  * Renders a single category card with icon + name.
  * Icon is fetched through the authenticated axios instance (GridFS).
  */
-export default function CategoryCard({ category }) {
+export default function CategoryCard({ category, onDelete }) {
     const [src, setSrc] = useState(null);
 
     useEffect(() => {
@@ -27,6 +27,17 @@ export default function CategoryCard({ category }) {
 
     return (
         <div className="cat-card">
+            <button 
+                className="cat-card-delete" 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(category);
+                }}
+                title="Delete Category"
+            >
+                <FiTrash2 size={14} />
+            </button>
+
             <div className="cat-thumb-wrap">
                 {src ? (
                     <img src={src} alt={category.name} className="cat-thumb-img" />

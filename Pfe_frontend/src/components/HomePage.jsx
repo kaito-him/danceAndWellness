@@ -3,6 +3,7 @@ import "../styles/HomePage.css";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import api from "../components/services/api";
+import { FiCalendar, FiBarChart2, FiMessageCircle, FiTarget } from "react-icons/fi";
 import des1 from "../assets/decs1.jpg";
 import des2 from "../assets/des2.jpg";
 import mobileApp from "../assets/mobileApp.webp";
@@ -13,46 +14,22 @@ const BASE_URL = "http://localhost:8080";
 
 const FEATURES = [
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <rect x="14" y="2" width="8.5" height="8.5" rx="1"
-          transform="rotate(45 14 2)" stroke="#b89c4d" strokeWidth="1.5"/>
-      </svg>
-    ),
+    icon: <FiCalendar size={36} strokeWidth={1.5} />,
     title: "Smart Scheduling",
     desc: "AI-powered class management that adapts to your rhythm.",
   },
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <circle cx="14" cy="14" r="10" stroke="#b89c4d" strokeWidth="1.5"/>
-        <circle cx="14" cy="14" r="5"  fill="#b89c4d"/>
-      </svg>
-    ),
+    icon: <FiBarChart2 size={36} strokeWidth={1.5} />,
     title: "Performance Analytics",
     desc: "Deep insights on student progress, attendance, and wellness trends.",
   },
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <circle cx="14" cy="14" r="10" stroke="#b89c4d" strokeWidth="1.5"/>
-        {[...Array(5)].map((_, i) => (
-          <line key={i} x1={9 + i * 2.5} y1="4" x2={9 + i * 2.5} y2="24"
-            stroke="#b89c4d" strokeWidth="1.2"/>
-        ))}
-      </svg>
-    ),
+    icon: <FiMessageCircle size={36} strokeWidth={1.5} />,
     title: "Live Communication",
     desc: "Seamless messaging between instructors and students.",
   },
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <circle cx="14" cy="14" r="10" stroke="#b89c4d" strokeWidth="1.5"/>
-        <circle cx="14" cy="14" r="6"  stroke="#b89c4d" strokeWidth="1.2"/>
-        <circle cx="14" cy="14" r="2"  stroke="#b89c4d" strokeWidth="1.2"/>
-      </svg>
-    ),
+    icon: <FiTarget size={36} strokeWidth={1.5} />,
     title: "Progress Tracking",
     desc: "Personalized dashboards that celebrate every milestone.",
   },
@@ -82,14 +59,28 @@ const HomePage = ({ instructorsRef }) => {
 
 const VISIBLE = 5;
 
-const canPrev = carouselIndex > 0;
-const canNext = carouselIndex + VISIBLE < featuredInstructors.length;
+// Infinite carousel - arrows always visible if we have enough instructors
+const canPrev = featuredInstructors.length > VISIBLE;
+const canNext = featuredInstructors.length > VISIBLE;
 
-const handlePrev = () => setCarouselIndex((i) => Math.max(0, i - 1));
-const handleNext = () =>
-  setCarouselIndex((i) =>
-    Math.min(featuredInstructors.length - VISIBLE, i + 1)
-  );
+// Handle right arrow: move first instructor to the end
+const handleNext = () => {
+  setFeaturedInstructors(prev => {
+    if (prev.length <= VISIBLE) return prev;
+    const [first, ...rest] = prev;
+    return [...rest, first];
+  });
+};
+
+// Handle left arrow: move last instructor to the beginning
+const handlePrev = () => {
+  setFeaturedInstructors(prev => {
+    if (prev.length <= VISIBLE) return prev;
+    const last = prev[prev.length - 1];
+    const rest = prev.slice(0, -1);
+    return [last, ...rest];
+  });
+};
 
 useEffect(() => {
   api.get("/instructors/featured")
@@ -148,7 +139,7 @@ useEffect(() => {
     {/* Left arrow */}
     {featuredInstructors.length > VISIBLE && (
       <button
-        className={`carousel-arrow carousel-arrow--left ${!canPrev ? "carousel-arrow--hidden" : ""}`}
+        className="carousel-arrow carousel-arrow--left"
         onClick={handlePrev}
         aria-label="Previous"
       >
@@ -161,12 +152,7 @@ useEffect(() => {
       {featuredInstructors.length === 0 ? (
         <p className="instructors-empty">No featured instructors yet.</p>
       ) : (
-        <div
-          className="instructors-track"
-          style={{
-            transform: `translateX(calc(-${carouselIndex} * (200px + 28px)))`,
-          }}
-        >
+        <div className="instructors-track">
           {featuredInstructors.map((inst) => {
             const photoUrl = inst.photo
               ? `${BASE_URL}/api/files/${inst.photo}`
@@ -203,7 +189,7 @@ useEffect(() => {
     {/* Right arrow */}
     {featuredInstructors.length > VISIBLE && (
       <button
-        className={`carousel-arrow carousel-arrow--right ${!canNext ? "carousel-arrow--hidden" : ""}`}
+        className="carousel-arrow carousel-arrow--right"
         onClick={handleNext}
         aria-label="Next"
       >
@@ -233,7 +219,7 @@ useEffect(() => {
             peace, our holistic approach ensures balance and excellence in
             every step.
           </p>
-          <button className="movement-btn">Discover More</button>
+          <Link to="/signup" className="movement-btn">Discover More</Link>
         </div>
 
         <div className="movement-images">

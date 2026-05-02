@@ -48,45 +48,24 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SHARED NAVBAR
+   EMBEDDED BREADCRUMB (Replaces old fixed nav)
 ═══════════════════════════════════════════════════════════ */
-.lesson-nav {
+.emb-breadcrumb {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 14px 40px;
+  padding: 16px 40px;
   background: var(--l-white);
   border-bottom: 1px solid var(--l-border);
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: 20;
 }
 
-.lesson-nav-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.lesson-logo {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--l-dark);
-  text-decoration: none;
-}
-
-.lesson-nav-divider {
-  color: #ddd;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.lesson-back-btn {
+.emb-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: none;
+  background: var(--l-white);
   border: 1.5px solid var(--l-border);
   border-radius: 20px;
   padding: 6px 16px;
@@ -95,34 +74,51 @@
   cursor: pointer;
   font-family: var(--font-body);
   text-decoration: none;
-  transition: border-color var(--l-transition), color var(--l-transition);
+  transition: all var(--l-transition);
 }
 
-.lesson-back-btn:hover {
+.emb-back-btn:hover {
   border-color: var(--l-gold);
   color: var(--l-gold);
+  background: var(--l-gold-pale);
 }
 
-/* nav right: progress indicator */
-.lesson-nav-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.emb-breadcrumb-sep {
+  color: #ccc;
+  margin: 0 12px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.emb-breadcrumb-course {
   font-size: 13px;
   color: var(--l-muted);
-}
-
-.lesson-nav-course-title {
-  font-weight: 600;
-  color: var(--l-dark);
-  font-size: 13px;
-  max-width: 260px;
+  font-weight: 500;
+  max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.lesson-progress-track {
+.emb-breadcrumb-current {
+  font-size: 13px;
+  color: var(--l-dark);
+  font-weight: 600;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Progress in Breadcrumb */
+.emb-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.emb-progress-track {
   width: 140px;
   height: 6px;
   background: var(--l-border);
@@ -131,12 +127,31 @@
   flex-shrink: 0;
 }
 
-.lesson-progress-fill {
+.emb-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--l-gold), var(--l-gold-light));
   border-radius: 10px;
   transition: width 0.4s ease;
 }
+
+.emb-progress-label {
+  font-size: 12px;
+  color: var(--l-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .emb-breadcrumb {
+    padding: 12px 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .emb-progress-wrap {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
 
 /* ═══════════════════════════════════════════════════════════
    LESSON CARDS PAGE — HERO
@@ -794,16 +809,7 @@
     font-size: 20px;
   }
 
-  .lesson-nav {
-    padding: 12px 20px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
 
-  .lesson-nav-progress {
-    order: 3;
-    width: 100%;
-  }
 
   .lc-hero {
     padding: 30px 20px 24px;
@@ -824,5 +830,244 @@
 @media (max-width: 520px) {
   .lc-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LESSON CARD SKELETON
+═══════════════════════════════════════════════════════════ */
+.lc-card-skeleton {
+  pointer-events: none;
+  animation: lcCardIn 0.42s ease forwards;
+}
+
+.lc-skel-thumb {
+  position: relative;
+  background: linear-gradient(135deg, #f0ece2, #e6e0d0);
+  overflow: hidden;
+}
+
+.lc-skel-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: lcShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes lcShimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.lc-skel-line {
+  background: #ede8dc;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lc-skel-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: lcShimmer 1.4s ease-in-out infinite;
+}
+
+.lc-skel-title {
+  height: 16px;
+  width: 85%;
+  margin-bottom: 6px;
+}
+
+.lc-skel-dur {
+  height: 12px;
+  width: 50%;
+}
+
+.lc-skel-bar {
+  height: 4px;
+  width: 100%;
+  border-radius: 10px;
+}
+
+.lc-skel-label {
+  height: 10px;
+  width: 40%;
+  margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO ROW — title left, progress ring right
+═══════════════════════════════════════════════════════════ */
+.lc-hero-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.lc-hero-left {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Circular Progress Ring ── */
+.lc-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--l-border);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.lc-hero-progress-ring {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.lc-progress-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.lc-progress-bg-circle {
+  fill: none;
+  stroke: var(--l-border);
+  stroke-width: 3;
+}
+
+.lc-progress-fg-circle {
+  fill: none;
+  stroke: var(--l-gold);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease;
+}
+
+.lc-progress-ring-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--l-gold);
+}
+
+.lc-hero-progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lc-hero-progress-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--l-dark);
+}
+
+.lc-hero-progress-detail {
+  font-size: 12px;
+  color: var(--l-muted);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROGRESS ENHANCEMENTS
+═══════════════════════════════════════════════════════════ */
+
+/* Video index badge — top left of thumbnail */
+.lc-video-index-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  z-index: 4;
+  letter-spacing: 0.4px;
+}
+
+/* Completed badge overlay on lesson card thumbnail */
+.lc-completed-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, var(--l-gold), var(--l-gold-light));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(184, 156, 77, 0.3);
+  z-index: 5;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* Animate progress fill width */
+.lc-card-progress-fill {
+  transition: width 0.5s ease;
+}
+
+/* Gold fill for completed lessons */
+.lc-card-progress-fill.lc-progress-done {
+  background: linear-gradient(90deg, var(--l-gold), var(--l-gold-light));
+}
+
+/* Completed label styling */
+.lc-card-progress-label {
+  transition: color 0.3s ease;
+}
+
+.lc-card-progress-label.lc-label-done {
+  color: var(--l-gold);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — progress ring
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .lc-hero-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .lc-hero-progress {
+    width: 100%;
   }
 }

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import api from "./services/api";
+import pulpfictionBg from "../assets/pulpfiction.png";
 import "../styles/InstructorSignup.css";
 
 const VALID_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -28,29 +29,40 @@ const INITIAL_FORM = {
   website: "",
 };
 
-// ── Success screen ────────────────────────────────────────────────────────────
+const STEPS = [
+  { num: "01", label: "Account",     subtitle: "Your identity on the platform" },
+  { num: "02", label: "Credentials", subtitle: "Prove your expertise"          },
+  { num: "03", label: "Profile",     subtitle: "Tell your story"               },
+];
+
+// ── Field ────────────────────────────────────────────────────────────────────
+function Field({ label, error, children }) {
+  return (
+    <div className={`is-field${error ? " is-field--error" : ""}`}>
+      <label className="is-label">{label}</label>
+      {children}
+      {error && <p className="is-error">{error}</p>}
+    </div>
+  );
+}
+
+// ── Success ───────────────────────────────────────────────────────────────────
 function SuccessScreen({ email }) {
   return (
     <>
       <Navbar />
-      <div className="instructor-page">
-        <div className="instructor-container">
-          <div className="instructor-card success-card">
-            <div className="success-icon">✉️</div>
-            <h2>Application <em>submitted!</em></h2>
-            <p className="subtitle">
-              A confirmation email has been sent to <strong>{email}</strong>.
+      <div className="is-page">
+        <div className="is-panel is-panel--success">
+          <div className="is-success">
+            <span className="is-success__icon">✉</span>
+            <h2 className="is-success__title">Application submitted</h2>
+            <p className="is-success__body">
+              A confirmation was sent to <strong>{email}</strong>.
+              Our team reviews applications within{" "}
+              <strong>3–5 business days</strong>.
             </p>
-            <div className="review-inline">
-              Our admin team will review your application and get back to you
-              within <strong>3 to 5 days</strong>.
-            </div>
-            <Link
-              to="/"
-              className="submit-btn"
-              style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: "1.5rem" }}
-            >
-              Back to home
+            <Link to="/" className="is-btn is-btn--gold" style={{ marginTop: "2rem", display: "block", textAlign: "center", textDecoration: "none" }}>
+              Return home
             </Link>
           </div>
         </div>
@@ -59,22 +71,24 @@ function SuccessScreen({ email }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Main ─────────────────────────────────────────────────────────────────────
 export default function InstructorSignup() {
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [file, setFile] = useState(null);
-  const [showPw, setShowPw] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [form, setForm]           = useState(INITIAL_FORM);
+  const [file, setFile]           = useState(null);
+  const [showPw, setShowPw]       = useState(false);
+  const [showCp, setShowCp]       = useState(false);
+  const [errors, setErrors]       = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [step, setStep]           = useState(0); // 0-indexed
+  const [dir, setDir]             = useState(1); // 1 = forward, -1 = back
+  const panelRef                  = useRef(null);
 
-  // ── Fetch categories from API ───────────────────────────────────────────────
   useEffect(() => {
     api.get("/categories")
-      .then((res) => setCategories(res.data))
+      .then((r) => setCategories(r.data))
       .catch(() => setCategories([]));
   }, []);
 
@@ -84,10 +98,7 @@ export default function InstructorSignup() {
     const { name, value } = e.target;
     setForm((f) => {
       const next = { ...f, [name]: value };
-      // Clear the custom field if user switches away from Other
-      if (name === "specialization" && value !== "Other") {
-        next.otherSpecialization = "";
-      }
+      if (name === "specialization" && value !== "Other") next.otherSpecialization = "";
       return next;
     });
     if (errors[name]) setErrors((err) => ({ ...err, [name]: "" }));
@@ -107,37 +118,50 @@ export default function InstructorSignup() {
     setErrors((e) => ({ ...e, certification: "" }));
   };
 
-  const validate = () => {
+  // Per-step validation
+  const validateStep = (s) => {
     const e = {};
-    if (!form.username.trim()) e.username = "Username is required";
-    if (!form.email.trim()) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email";
-    if (form.password.length < 8) e.password = "Minimum 8 characters";
-    if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
-    if (!file) e.certification = "Certification document is required";
-    if (!form.yearsOfExperience) e.yearsOfExperience = "Select your experience";
-    if (!form.specialization) e.specialization = "Select a specialization";
-    if (isOther && !form.otherSpecialization.trim())
-      e.otherSpecialization = "Please specify your specialization";
-    if (form.bio.trim().length < 10) e.bio = `${10 - form.bio.trim().length} more characters needed`;
+    if (s === 0) {
+      if (!form.username.trim()) e.username = "Username is required";
+      if (!form.email.trim()) e.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email";
+      if (form.password.length < 8) e.password = "Minimum 8 characters";
+      if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
+    }
+    if (s === 1) {
+      if (!file) e.certification = "Certification document is required";
+      if (!form.yearsOfExperience) e.yearsOfExperience = "Select your experience";
+      if (!form.specialization) e.specialization = "Select a specialization";
+      if (isOther && !form.otherSpecialization.trim()) e.otherSpecialization = "Please specify";
+    }
+    if (s === 2) {
+      if (form.bio.trim().length < 10) e.bio = `${10 - form.bio.trim().length} more characters needed`;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError("");
-    if (!validate()) return;
+  const goNext = () => {
+    if (!validateStep(step)) return;
+    setDir(1);
+    setStep((s) => s + 1);
+    panelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
+  const goBack = () => {
+    setDir(-1);
+    setStep((s) => s - 1);
+    panelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(2)) return;
+    setServerError("");
     const formData = new FormData();
     const { confirmPassword, otherSpecialization, ...payload } = form;
-
-    // Send the resolved specialization value
     payload.specialization = isOther ? otherSpecialization.trim() : form.specialization;
-
     formData.append("data", new Blob([JSON.stringify(payload)], { type: "application/json" }));
     formData.append("certFile", file);
-
     setSubmitting(true);
     try {
       await api.post("/auth/register/instructor", formData, {
@@ -145,8 +169,7 @@ export default function InstructorSignup() {
       });
       setSubmitted(true);
     } catch (err) {
-      const msg = err.response?.data || "Something went wrong. Please try again.";
-      setServerError(msg);
+      setServerError(err.response?.data || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -155,212 +178,173 @@ export default function InstructorSignup() {
   if (submitted) return <SuccessScreen email={form.email} />;
 
   const bioLen = form.bio.trim().length;
+  const progress = ((step) / (STEPS.length - 1)) * 100;
 
   return (
     <>
       <Navbar />
-      <div className="instructor-page">
-        <div className="instructor-container">
+      <div className="is-page">
 
-          <Link to="/signup" className="back-btn">← Back to role selection</Link>
+        {/* ── Form panel ── */}
+        <div className="is-panel" ref={panelRef}>
 
-          <div className="instructor-card">
-            <h2>Apply as an <em>instructor</em></h2>
-            <p className="subtitle">
-              Share your expertise with thousands of students across the platform.
-            </p>
+          {/* Progress bar */}
+          <div className="is-progress">
+            <div className="is-progress__track">
+              <div className="is-progress__fill" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+            </div>
+            <span className="is-progress__label">{step + 1} / {STEPS.length}</span>
+          </div>
 
-            <form onSubmit={handleSubmit} noValidate>
+          <div className={`is-step is-step--dir${dir > 0 ? "fwd" : "bck"}`} key={step}>
 
-              {/* ── Account ─────────────────────────────────────────────────── */}
-              <div className="form-section">
-                <h3>Account</h3>
+            {/* ── Step 0: Account ── */}
+            {step === 0 && (
+              <div className="is-step__body">
+                <h2 className="is-step__title">Create your account</h2>
+                <p className="is-step__desc">This will be your identity on the platform.</p>
 
-                <div className="input-row">
-                  <div className="input-group">
-                    <label>Username *</label>
-                    <input name="username" value={form.username.trim()} onChange={set} placeholder="your_handle" />
-                    <p className="error">{errors.username}</p>
-                  </div>
-                  <div className="input-group">
-                    <label>Email *</label>
-                    <input name="email" type="email" value={form.email} onChange={set} placeholder="you@example.com" />
-                    <p className="error">{errors.email}</p>
-                  </div>
-                </div>
+                <Field label="Username *" error={errors.username}>
+                  <input className="is-input" name="username" value={form.username} onChange={set} placeholder="your_handle" />
+                </Field>
 
-                <div className="input-row">
-                  <div className="input-group">
-                    <label>Password *</label>
-                    <div className="password-field">
-                      <input
-                        name="password"
-                        type={showPw ? "text" : "password"}
-                        value={form.password}
-                        onChange={set}
-                        placeholder="Min. 8 characters"
-                      />
-                      <button type="button" onClick={() => setShowPw((v) => !v)}>
-                        {showPw ? "Hide" : "Show"}
-                      </button>
+                <Field label="Email *" error={errors.email}>
+                  <input className="is-input" name="email" type="email" value={form.email} onChange={set} placeholder="you@example.com" />
+                </Field>
+
+                <div className="is-row">
+                  <Field label="Password *" error={errors.password}>
+                    <div className="is-pw">
+                      <input className="is-input" name="password" type={showPw ? "text" : "password"} value={form.password} onChange={set} placeholder="Min. 8 characters" />
+                      <button type="button" className="is-pw__toggle" onClick={() => setShowPw(v => !v)}>{showPw ? "Hide" : "Show"}</button>
                     </div>
-                    <p className="error">{errors.password}</p>
-                  </div>
+                  </Field>
 
-                  <div className="input-group">
-                    <label>Confirm Password *</label>
-                    <div className="password-field">
-                      <input
-                        name="confirmPassword"
-                        type={showConfirm ? "text" : "password"}
-                        value={form.confirmPassword}
-                        onChange={set}
-                        placeholder="Repeat password"
-                      />
-                      <button type="button" onClick={() => setShowConfirm((v) => !v)}>
-                        {showConfirm ? "Hide" : "Show"}
-                      </button>
+                  <Field label="Confirm Password *" error={errors.confirmPassword}>
+                    <div className="is-pw">
+                      <input className="is-input" name="confirmPassword" type={showCp ? "text" : "password"} value={form.confirmPassword} onChange={set} placeholder="Repeat password" />
+                      <button type="button" className="is-pw__toggle" onClick={() => setShowCp(v => !v)}>{showCp ? "Hide" : "Show"}</button>
                     </div>
-                    <p className="error">{errors.confirmPassword}</p>
-                  </div>
+                  </Field>
                 </div>
               </div>
+            )}
 
-              {/* ── Credentials ─────────────────────────────────────────────── */}
-              <div className="form-section">
-                <h3>Credentials</h3>
+            {/* ── Step 1: Credentials ── */}
+            {step === 1 && (
+              <div className="is-step__body">
+                <h2 className="is-step__title">Your credentials</h2>
+                <p className="is-step__desc">Help us verify your expertise before you start teaching.</p>
 
-                <div className="input-group">
-                  <label>Certification Document *</label>
-                  <div className="upload-box">
+                <Field label="Certification Document *" error={errors.certification}>
+                  <div className={`is-upload${file ? " is-upload--done" : ""}`}>
                     {file ? (
-                      <div className="file-row">
-                        <span>✓ {file.name}</span>
-                        <button type="button" onClick={() => setFile(null)}>Remove</button>
+                      <div className="is-upload__file">
+                        <div className="is-upload__icon">✓</div>
+                        <span className="is-upload__name">{file.name}</span>
+                        <button type="button" className="is-upload__remove" onClick={() => setFile(null)}>Remove</button>
                       </div>
                     ) : (
-                      <>
-                        <label className="upload-label">
-                          Click to upload
-                          <input
-                            type="file"
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            onChange={(e) => handleFile(e.target.files[0])}
-                            hidden
-                          />
-                        </label>
-                        <p className="file-note">PDF · DOC · DOCX · JPG · PNG · Max 5 MB</p>
-                      </>
+                      <label className="is-upload__label">
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFile(e.target.files[0])} hidden />
+                        <span className="is-upload__icon-big">↑</span>
+                        <span className="is-upload__cta">Click to upload</span>
+                        <span className="is-upload__hint">PDF · JPG · PNG · Max 5 MB</span>
+                      </label>
                     )}
                   </div>
-                  <p className="error">{errors.certification}</p>
-                </div>
+                </Field>
 
-                <div className="input-row">
-                  <div className="input-group">
-                    <label>Years of Experience *</label>
-                    <select name="yearsOfExperience" value={form.yearsOfExperience} onChange={set}>
+                <div className="is-row">
+                  <Field label="Years of Experience *" error={errors.yearsOfExperience}>
+                    <select className="is-input is-input--select" name="yearsOfExperience" value={form.yearsOfExperience} onChange={set}>
                       <option value="">Select range</option>
                       {EXPERIENCE_OPTIONS.map((o) => <option key={o}>{o}</option>)}
                     </select>
-                    <p className="error">{errors.yearsOfExperience}</p>
-                  </div>
+                  </Field>
 
-                  <div className="input-group">
-                    <label>Specialization *</label>
-                    <select name="specialization" value={form.specialization} onChange={set}>
+                  <Field label="Specialization *" error={errors.specialization}>
+                    <select className="is-input is-input--select" name="specialization" value={form.specialization} onChange={set}>
                       <option value="">Select discipline</option>
                       {categories.map((cat) => (
-                        <option key={cat.id ?? cat.name} value={cat.name}>
-                          {cat.name}
-                        </option>
+                        <option key={cat.id ?? cat.name} value={cat.name}>{cat.name}</option>
                       ))}
                       <option value="Other">Other</option>
                     </select>
-                    <p className="error">{errors.specialization}</p>
-                  </div>
+                  </Field>
                 </div>
 
-                {/* ── Other specialization input ─────────────────────────────── */}
                 {isOther && (
-                  <div className="input-group">
-                    <label>specify your specialization *</label>
-                    <input
-                      name="otherSpecialization"
-                      value={form.otherSpecialization}
-                      onChange={set}
-                      placeholder="Describe your specialization…"
-                    />
-                    <p className="error">{errors.otherSpecialization}</p>
-                  </div>
+                  <Field label="Specify your specialization *" error={errors.otherSpecialization}>
+                    <input className="is-input" name="otherSpecialization" value={form.otherSpecialization} onChange={set} placeholder="Describe your discipline…" />
+                  </Field>
                 )}
 
-                <div className="input-group">
-                  <label>Studio / Institution</label>
-                  <input
-                    name="studioName"
-                    value={form.studioName}
-                    onChange={set}
-                    placeholder="Optional — leave blank if self-employed"
-                  />
-                </div>
+                <Field label="Studio / Institution">
+                  <input className="is-input" name="studioName" value={form.studioName} onChange={set} placeholder="Optional — leave blank if self-employed" />
+                </Field>
               </div>
+            )}
 
-              {/* ── Profile ─────────────────────────────────────────────────── */}
-              <div className="form-section">
-                <h3>Profile</h3>
+            {/* ── Step 2: Profile ── */}
+            {step === 2 && (
+              <div className="is-step__body">
+                <h2 className="is-step__title">Tell your story</h2>
+                <p className="is-step__desc">Students choose instructors based on who they are, not just what they teach.</p>
 
-                <div className="input-group">
-                  <label>Professional Bio *</label>
-                  <textarea
-                    name="bio"
-                    rows={4}
-                    value={form.bio}
-                    onChange={set}
-                    placeholder="Describe your teaching philosophy, experience, and style…"
-                  />
-                  <div className="bio-info">
+                <Field label="Professional Bio *" error={errors.bio}>
+                  <textarea className="is-input is-input--textarea" name="bio" rows={5} value={form.bio} onChange={set} placeholder="Teaching philosophy, experience, style…" />
+                  <div className="is-bio-counter">
                     <span>Minimum 10 characters</span>
-                    <span className={bioLen >= 10 ? "ok" : ""}>{bioLen}</span>
+                    <span className={bioLen >= 10 ? "is-bio-counter__ok" : ""}>{bioLen}</span>
                   </div>
-                  <p className="error">{errors.bio}</p>
+                </Field>
+
+                <div className="is-row">
+                  <Field label="LinkedIn">
+                    <input className="is-input" name="linkedIn" value={form.linkedIn} onChange={set} placeholder="linkedin.com/in/…" />
+                  </Field>
+                  <Field label="Website">
+                    <input className="is-input" name="website" value={form.website} onChange={set} placeholder="yoursite.com" />
+                  </Field>
                 </div>
 
-                <div className="input-row">
-                  <div className="input-group">
-                    <label>LinkedIn</label>
-                    <input name="linkedIn" value={form.linkedIn} onChange={set} placeholder="linkedin.com/in/…" />
-                  </div>
-                  <div className="input-group">
-                    <label>Website</label>
-                    <input name="website" value={form.website} onChange={set} placeholder="yoursite.com" />
-                  </div>
+                <div className="is-notice">
+                  Applications are reviewed within <strong>3–5 business days</strong>.
                 </div>
+
+                {serverError && (
+                  <div className="is-server-error">⚠ {serverError}</div>
+                )}
               </div>
+            )}
 
-              {/* ── Notice ── */}
-              <p className="review-inline">
-                Your application will be reviewed by our team within{" "}
-                <strong>3–5 business days</strong>.
-              </p>
-
-              {serverError && (
-                <div className="server-error-banner">⚠ {serverError}</div>
-              )}
-
-              <button type="submit" className="submit-btn" disabled={submitting}>
-                {submitting ? "Submitting…" : "Submit Application"}
-              </button>
-
-            </form>
           </div>
 
-          <p className="form-foot">
-            Want to learn instead?{" "}
-            <Link to="/signup/student">Create a student account</Link>
-          </p>
+          {/* ── Navigation ── */}
+          <div className="is-nav">
+            {step > 0 ? (
+              <button type="button" className="is-btn is-btn--ghost" onClick={goBack}>← Back</button>
+            ) : (
+              <Link to="/signup" className="is-btn is-btn--ghost">← Cancel</Link>
+            )}
 
+            {step < STEPS.length - 1 ? (
+              <button type="button" className="is-btn is-btn--primary" onClick={goNext}>
+                Continue <span className="is-btn__arrow">→</span>
+              </button>
+            ) : (
+              <button type="button" className="is-btn is-btn--gold" onClick={handleSubmit} disabled={submitting}>
+                {submitting ? "Submitting…" : "Submit Application"}
+              </button>
+            )}
+          </div>
+
+          <p className="is-foot">
+            Want to learn instead? <Link to="/signup/student">Create a student account</Link>
+          </p>
         </div>
+
       </div>
     </>
   );

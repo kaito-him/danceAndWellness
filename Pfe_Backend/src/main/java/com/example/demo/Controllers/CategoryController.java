@@ -22,6 +22,13 @@ public class CategoryController {
         return categoryService.addCategory(category);
     }
 
+ // ✅ Delete category
+    @DeleteMapping("/{id}")
+    public String deleteCategory(@PathVariable String id) {
+        categoryService.deleteCategory(id);
+        return "Category deleted successfully with id: " + id;
+    }
+    
     @GetMapping
     public List<Category> getAllCategories() {
         return categoryService.getAllCategories();

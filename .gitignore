@@ -1,0 +1,12 @@
+# Eclipse workspace metadata
+.metadata/
+
+# VS Code
+.vscode/
+
+# Secrets — never commit real credentials
+Pfe_Backend/src/main/resources/application.properties
+
+# OS
+.DS_Store
+Thumbs.db

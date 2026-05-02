@@ -5,12 +5,12 @@ import "../styles/Login.css";
 import Navbar from "../components/Navbar";
 
 const Login = () => {
-  const navigate  = useNavigate();
-  const location  = useLocation(); // ← new
+  const navigate = useNavigate();
+  const location = useLocation(); // ← new
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Where to send the user after login — course page or role dashboard
   const redirectTo = location.state?.from || null;
@@ -21,14 +21,34 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res  = await api.post("/auth/login", { username, password });
+      const res = await api.post("/auth/login", { username, password });
       const data = res.data;
 
       if (data.success) {
-        localStorage.setItem("token",    data.token);
-        localStorage.setItem("role",     data.role);
-        localStorage.setItem("userId",   data.userId);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("userId", data.userId);
         localStorage.setItem("username", data.username);
+
+        // Check if user was trying to access a course
+        const pendingCourseId = localStorage.getItem("pendingCourseId");
+        
+        if (pendingCourseId) {
+          // Clear the pending course ID
+          localStorage.removeItem("pendingCourseId");
+          
+          // Navigate based on role
+          if (data.role === "ADMIN") {
+            navigate(`/admin?section=course-preview&courseId=${pendingCourseId}`);
+            return;
+          } else if (data.role === "INSTRUCTOR") {
+            navigate(`/instructor?section=course-preview&courseId=${pendingCourseId}&showRoleWarning=true`);
+            return;
+          } else if (data.role === "STUDENT") {
+            navigate(`/student/course/${pendingCourseId}`);
+            return;
+          }
+        }
 
         // If the user was trying to reach a specific page, go there first
         if (redirectTo) {
@@ -36,14 +56,14 @@ const Login = () => {
           return;
         }
 
-        if (data.role === "ADMIN")      navigate("/admin");
+        if (data.role === "ADMIN") navigate("/admin");
         if (data.role === "INSTRUCTOR") navigate("/instructor");
-        if (data.role === "STUDENT")    navigate("/student");
+        if (data.role === "STUDENT") navigate("/student");
       } else {
         setError("Incorrect username or password. Please try again.");
       }
     } catch (err) {
-      const status  = err?.response?.status;
+      const status = err?.response?.status;
       const message = err?.response?.data?.message;
 
       if (status === 400) {

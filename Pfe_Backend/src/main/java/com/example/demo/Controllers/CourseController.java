@@ -44,23 +44,38 @@ public class CourseController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
-
-    // ── Endpoints ─────────────────────────────────────────────────
-    @GetMapping("/pending")
-    public ResponseEntity<List<Course>> getPendingCourses() {
-        return ResponseEntity.ok(courseService.getAllPendingCourses());
+    
+    @GetMapping("/{courseId}/enrollments/count")
+    public ResponseEntity<Long> getEnrollmentCount(@PathVariable String courseId) {
+        try {
+            long count = courseService.getEnrollmentCount(courseId);
+            return ResponseEntity.ok(count);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
+    // ── Endpoints ─────────────────────────────────────────────────
     @GetMapping("/published")
     public ResponseEntity<List<Course>> getPublishedCourses() {
         return ResponseEntity.ok(courseService.getAllPublishedCourses());
     }
 
-    @GetMapping("/my-pending")
-    public ResponseEntity<List<Course>> getMyPendingCourses() {
+    @GetMapping("/my-drafts")
+    public ResponseEntity<List<Course>> getMyDraftCourses() {
         try {
             Instructor instructor = resolveInstructor();
-            return ResponseEntity.ok(courseService.getPendingCoursesByInstructor(instructor));
+            return ResponseEntity.ok(courseService.getDraftCoursesByInstructor(instructor));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @GetMapping("/my-archived")
+    public ResponseEntity<List<Course>> getMyArchivedCourses() {
+        try {
+            Instructor instructor = resolveInstructor();
+            return ResponseEntity.ok(courseService.getArchivedCoursesByInstructor(instructor));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -72,6 +87,20 @@ public class CourseController {
             Instructor instructor = resolveInstructor();
             course.setInstructor(instructor);
             Course saved = courseService.addCourse(course);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/draft")
+    public ResponseEntity<?> addDraftCourse(@RequestBody Course course) {
+        try {
+            Instructor instructor = resolveInstructor();
+            course.setInstructor(instructor);
+            Course saved = courseService.addDraftCourse(course);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -115,25 +144,74 @@ public class CourseController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
-    
-    
-    @PatchMapping("/{courseId}/approve")
-    public ResponseEntity<?> approveCourse(@PathVariable String courseId) {
+
+    @PatchMapping("/{courseId}/publish")
+    public ResponseEntity<?> publishDraft(@PathVariable String courseId) {
         try {
-            Course approved = courseService.approveCourse(courseId);
-            return ResponseEntity.ok(approved);
+            Instructor instructor = resolveInstructor();
+            Course published = courseService.publishDraft(courseId, instructor);
+            return ResponseEntity.ok(published);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{courseId}/archive-instructor")
+    public ResponseEntity<?> archiveByInstructor(@PathVariable String courseId) {
+        try {
+            Instructor instructor = resolveInstructor();
+            Course archived = courseService.archiveCourseByInstructor(courseId, instructor);
+            return ResponseEntity.ok(archived);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{courseId}/unarchive")
+    public ResponseEntity<?> unarchiveByInstructor(@PathVariable String courseId) {
+        try {
+            Instructor instructor = resolveInstructor();
+            Course published = courseService.unarchiveCourseByInstructor(courseId, instructor);
+            return ResponseEntity.ok(published);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+    
+    
+    @PatchMapping("/{courseId}/archive")
+    public ResponseEntity<?> archiveCourse(
+            @PathVariable String courseId,
+            @RequestBody java.util.Map<String, String> body) {
+        try {
+            String message = body.get("message");
+            Course archived = courseService.archiveCourse(courseId, message);
+            return ResponseEntity.ok(archived);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    @PatchMapping("/{courseId}/archive")
-    public ResponseEntity<?> archiveCourse(@PathVariable String courseId) {
+    @GetMapping("/admin-archived")
+    public ResponseEntity<List<Course>> getAdminArchivedCourses() {
+        return ResponseEntity.ok(courseService.getAllAdminArchivedCourses());
+    }
+
+    @PatchMapping("/{courseId}/unarchive-admin")
+    public ResponseEntity<?> unarchiveCourseByAdmin(@PathVariable String courseId) {
         try {
-            Course archived = courseService.archiveCourse(courseId);
-            return ResponseEntity.ok(archived);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            Course unarchived = courseService.unarchiveCourseByAdmin(courseId);
+            return ResponseEntity.ok(unarchived);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 }

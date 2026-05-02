@@ -83,9 +83,10 @@ public class AuthController {
     public ResponseEntity<?> registerStudent(@RequestBody SignupRequest req) {
         try {
             userService.registerStudent(req);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Account created successfully.");
+            return ResponseEntity.status(HttpStatus.CREATED)
+                                 .body("Account created successfully.");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
     

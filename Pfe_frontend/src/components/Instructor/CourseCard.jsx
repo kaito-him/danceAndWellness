@@ -1,21 +1,44 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "../../styles/Coursecard.css";
+import { FiMoreVertical, FiArchive, FiRefreshCw, FiTrash2, FiEdit3 } from "react-icons/fi";
 
 const STATUS_LABELS = {
-  PENDING:   { label: "Pending Review", className: "status-pending"   },
-  PUBLISHED: { label: "Published",      className: "status-published" },
-  ARCHIVED:  { label: "Archived",       className: "status-archived"  },
+  DRAFT: { label: "Draft", className: "status-pending" },
+  PUBLISHED: { label: "Published", className: "status-published" },
+  ARCHIVED: { label: "Archived", className: "status-archived" },
 };
 
-export default function CourseCard({ course, onDelete, onEdit }) {
+export default function CourseCard({
+  course,
+  onDelete,
+  onEdit,
+  onPublish,
+  publishLabel = "Publish",
+  deleteLabel = "Delete",
+}) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
   const thumbnailSrc = course.thumbnailUrl
     ? `http://localhost:8080${course.thumbnailUrl}`
     : null;
 
-  const status = STATUS_LABELS[course.status] ?? STATUS_LABELS.PENDING;
+  const status = STATUS_LABELS[course.status] ?? STATUS_LABELS.DRAFT;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isArchivedByAdmin = course.status === 'ARCHIVED' && course.archivedByAdmin;
 
   return (
-    <div className="course-card">
+    <div className="course-card course-card-clickable" onClick={() => onEdit(course)}>
 
       {/* Thumbnail */}
       <div className="course-card-thumb">
@@ -31,6 +54,49 @@ export default function CourseCard({ course, onDelete, onEdit }) {
             </svg>
           </div>
         )}
+
+        {/* Options Menu */}
+        <div className="course-card-options" ref={dropdownRef}>
+          <button
+            className="options-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDropdown(!showDropdown);
+            }}
+          >
+            <FiMoreVertical />
+          </button>
+
+          {showDropdown && (
+            <div className="options-dropdown">
+              <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onEdit(course); }}>
+                <FiEdit3 /> Edit / View
+              </button>
+
+              {/* Archive Action */}
+              {onDelete && deleteLabel === "Archive" && (
+                <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onDelete(course); }}>
+                  <FiArchive /> Archive
+                </button>
+              )}
+
+              {/* Unarchive Action */}
+              {onPublish && publishLabel === "Unarchive" && !isArchivedByAdmin && (
+                <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onPublish(course); }}>
+                  <FiRefreshCw /> Unarchive
+                </button>
+              )}
+
+              {/* Delete Action (Drafts or Permanent) */}
+              {onDelete && deleteLabel !== "Archive" && (
+                <button className="dropdown-item delete" onClick={(e) => { e.stopPropagation(); setShowDropdown(false); onDelete(course); }}>
+                  <FiTrash2 /> {deleteLabel}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         <span className={`course-card-status ${status.className}`}>
           {status.label}
         </span>
@@ -41,11 +107,13 @@ export default function CourseCard({ course, onDelete, onEdit }) {
         <h3 className="course-card-title">{course.title}</h3>
 
         <div className="course-card-tags">
-          <span className="tag tag-category">{course.category}</span>
-          <span className="tag tag-level">{course.level}</span>
-          <span className={`tag tag-price ${course.isFree ? "tag-free" : "tag-paid"}`}>
-            {course.isFree ? "Free" : `$${course.price}`}
-          </span>
+          {course.category && <span className="tag tag-category">{course.category}</span>}
+          {course.level && <span className="tag tag-level">{course.level}</span>}
+          {course.isFree !== undefined && (
+            <span className={`tag tag-price ${course.isFree ? "tag-free" : "tag-paid"}`}>
+              {course.isFree ? "Free" : `$${course.price}`}
+            </span>
+          )}
         </div>
 
         <p className="course-card-meta">
@@ -53,26 +121,36 @@ export default function CourseCard({ course, onDelete, onEdit }) {
         </p>
       </div>
 
-      {/* Actions */}
+      {/* Actions (Only Publish/Submit and locked status) */}
       <div className="course-card-actions">
-        <button className="card-btn card-btn-edit" onClick={() => onEdit(course)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-          Edit
-        </button>
-        <button className="card-btn card-btn-delete" onClick={() => onDelete(course.courseId)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-            <path d="M9 6V4h6v2"/>
-          </svg>
-          Delete
-        </button>
+        {onPublish && publishLabel !== "Unarchive" && (
+          <button
+            className="card-btn card-btn-publish"
+            onClick={(e) => { e.stopPropagation(); onPublish(course); }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            {publishLabel}
+          </button>
+        )}
+
+        {isArchivedByAdmin && (
+          <button
+            className="card-btn card-btn-publish"
+            disabled
+            style={{ opacity: 0.5, cursor: 'not-allowed', background: '#f5f5f5', color: '#999' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Locked
+          </button>
+        )}
       </div>
 
     </div>

@@ -125,6 +125,8 @@ public class InstructorPaymentService {
         return enrollments.stream().map(e -> {
             InstructorEnrollmentRow row = new InstructorEnrollmentRow();
             row.setEnrollmentId(e.getId());
+            row.setCourseId(e.getCourseId());
+            row.setStudentId(e.getStudentId());
             row.setCourseTitle(courseTitles.getOrDefault(e.getCourseId(), e.getCourseId()));
             row.setEnrollmentType(e.getType() != null ? e.getType().name() : "—");
             row.setEnrolledAt(e.getEnrolledAt());
@@ -141,6 +143,44 @@ public class InstructorPaymentService {
                     });
 
             // Earnings
+            if (e.getAmountPaidCents() != null) {
+                row.setAmountPaidCents(e.getAmountPaidCents());
+                row.setInstructorShareCents(
+                        Math.round(e.getAmountPaidCents() * INSTRUCTOR_SHARE));
+            } else {
+                row.setAmountPaidCents(0L);
+                row.setInstructorShareCents(0L);
+            }
+
+            return row;
+        }).collect(Collectors.toList());
+    }
+
+    public List<InstructorEnrollmentRow> getEnrollmentsByCourse(String courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
+
+        return enrollments.stream().map(e -> {
+            InstructorEnrollmentRow row = new InstructorEnrollmentRow();
+            row.setEnrollmentId(e.getId());
+            row.setCourseId(e.getCourseId());
+            row.setStudentId(e.getStudentId());
+            row.setCourseTitle(course.getTitle());
+            row.setEnrollmentType(e.getType() != null ? e.getType().name() : "—");
+            row.setEnrolledAt(e.getEnrolledAt());
+
+            userRepository.findById(e.getStudentId()).ifPresentOrElse(
+                    user -> {
+                        row.setStudentName(user.getUsername());
+                        row.setStudentEmail(user.getEmail());
+                    },
+                    () -> {
+                        row.setStudentName("Unknown");
+                        row.setStudentEmail("—");
+                    });
+
             if (e.getAmountPaidCents() != null) {
                 row.setAmountPaidCents(e.getAmountPaidCents());
                 row.setInstructorShareCents(

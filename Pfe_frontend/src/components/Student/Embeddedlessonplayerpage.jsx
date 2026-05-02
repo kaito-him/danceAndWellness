@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import api from "../services/api";
 import { FiArrowLeft, FiClock, FiLayers, FiArrowRight, FiCheckCircle, FiPlay } from "react-icons/fi";
 import "../../styles/Lesson.css";
 
@@ -17,33 +17,155 @@ const formatMin = (min) => {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
 
+const TICK_INTERVAL = 5000; // send progress every 5 seconds
+
 export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, onLessonChange }) {
   const videoRef = useRef(null);
+  const tickRef  = useRef(null);
+  const sseRef   = useRef(null);
+
+  const studentId = localStorage.getItem("userId");
 
   const [course,    setCourse]    = useState(null);
   const [loading,   setLoading]   = useState(true);
-  const [completed, setCompleted] = useState({});
 
+  /* Backend-driven progress state */
+  const [courseProgress, setCourseProgress]   = useState(0);     // overall %
+  const [completedCount, setCompletedCount]   = useState(0);
+  const [lessonProgress, setLessonProgress]   = useState({});    // { lessonId: { percent, completed } }
+
+  /* ── Fetch course data ── */
   useEffect(() => {
     setLoading(true);
-    axios
-      .get(`http://localhost:8080/api/courses/${courseId}`)
+    api
+      .get(`/courses/${courseId}`)
       .then(res  => { setCourse(res.data); setLoading(false); })
       .catch(err => { console.error(err); setLoading(false); });
   }, [courseId]);
 
+  /* ── Fetch initial progress from backend ── */
+  useEffect(() => {
+    if (!studentId || !courseId) return;
+
+    // Course-level progress
+    api.get("/progress/course", { params: { studentId, courseId } })
+      .then(res => {
+        const d = res.data;
+        setCourseProgress(d.courseCompletionPercent ?? 0);
+        setCompletedCount(d.completedLessons ?? 0);
+      })
+      .catch(() => {});
+
+    // Per-lesson progress list
+    api.get("/progress/lessons", { params: { studentId, courseId } })
+      .then(res => {
+        const map = {};
+        (res.data || []).forEach(lp => {
+          map[lp.lessonId] = {
+            percent: Math.round(lp.completionPercent ?? lp.lessonCompletionPercent ?? 0),
+            completed: lp.completed ?? false,
+          };
+        });
+        setLessonProgress(map);
+      })
+      .catch(() => {});
+  }, [studentId, courseId]);
+
+  /* ── SSE stream — live updates pushed from the backend ── */
+  useEffect(() => {
+    if (!studentId || !courseId) return;
+
+    const token = localStorage.getItem("token");
+    const url = `http://localhost:8080/api/progress/stream?studentId=${studentId}&courseId=${courseId}&token=${token}`;
+    const es = new EventSource(url);
+    sseRef.current = es;
+
+    es.addEventListener("progress", (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        // Update course-level
+        setCourseProgress(data.courseCompletionPercent ?? 0);
+        setCompletedCount(data.completedLessons ?? 0);
+        // Update the specific lesson
+        if (data.lessonId) {
+          setLessonProgress(prev => ({
+            ...prev,
+            [data.lessonId]: {
+              percent: Math.round(data.completionPercent ?? data.lessonCompletionPercent ?? 0),
+              completed: data.lessonCompleted ?? data.completed ?? false,
+            },
+          }));
+        }
+      } catch { /* ignore bad data */ }
+    });
+
+    es.onerror = () => {
+      // SSE will auto-reconnect; just log
+      console.warn("SSE connection lost, will retry…");
+    };
+
+    return () => { es.close(); sseRef.current = null; };
+  }, [studentId, courseId]);
+
+  /* ── Video progress tick every 5s ── */
+  const sendTick = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.paused || !studentId) return;
+
+    api.post("/progress/update", {
+      studentId,
+      courseId,
+      lessonId,
+      watchedSeconds: Math.floor(video.currentTime),
+      totalSeconds:   Math.floor(video.duration || 0),
+    }).catch(() => {});
+  }, [studentId, courseId, lessonId]);
+
+  /* Start / stop tick interval when video plays / pauses */
+  const startTicking = useCallback(() => {
+    if (tickRef.current) return;
+    sendTick(); // immediate first tick
+    tickRef.current = setInterval(sendTick, TICK_INTERVAL);
+  }, [sendTick]);
+
+  const stopTicking = useCallback(() => {
+    if (tickRef.current) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+    sendTick(); // one final tick when pausing
+  }, [sendTick]);
+
+  /* Clean up interval on unmount or lesson change */
+  useEffect(() => {
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, [lessonId]);
+
+  /* ── Derived ── */
   const lessons      = course?.lessons ?? [];
   const currentIndex = lessons.findIndex(l => String(l.lessonId) === String(lessonId));
   const current      = lessons[currentIndex];
   const prev         = lessons[currentIndex - 1];
   const next         = lessons[currentIndex + 1];
 
-  const completedCount = Object.values(completed).filter(Boolean).length;
-  const progress       = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const currentLessonProg   = lessonProgress[current?.lessonId] || { percent: 0, completed: false };
+  const isCurrentCompleted  = currentLessonProg.completed;
 
   const handleMarkDone = () => {
-    if (current) setCompleted(p => ({ ...p, [current.lessonId]: true }));
-    if (next)    onLessonChange(next.lessonId);
+    // Send a tick with full duration to mark 100%
+    const video = videoRef.current;
+    if (video && studentId) {
+      const totalSec = Math.floor(video.duration || 0);
+      api.post("/progress/update", {
+        studentId, courseId,
+        lessonId: current.lessonId,
+        watchedSeconds: totalSec,
+        totalSeconds: totalSec,
+      }).catch(() => {});
+    }
+    if (next) onLessonChange(next.lessonId);
   };
 
   /* ── Loading ── */
@@ -73,9 +195,9 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
         {/* Progress in breadcrumb */}
         <div className="emb-progress-wrap">
           <div className="emb-progress-track">
-            <div className="emb-progress-fill" style={{ width: `${progress}%` }} />
+            <div className="emb-progress-fill" style={{ width: `${courseProgress}%` }} />
           </div>
-          <span className="emb-progress-label">{progress}% complete</span>
+          <span className="emb-progress-label">{courseProgress}% complete</span>
         </div>
       </div>
 
@@ -92,7 +214,22 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
                 className="lp-video"
                 controls
                 src={`http://localhost:8080${current.mediaUrl}`}
-                onEnded={() => setCompleted(p => ({ ...p, [current.lessonId]: true }))}
+                onPlay={startTicking}
+                onPause={stopTicking}
+                onEnded={() => {
+                  stopTicking();
+                  // Send final tick with full duration
+                  if (studentId) {
+                    const video = videoRef.current;
+                    const totalSec = Math.floor(video?.duration || 0);
+                    api.post("/progress/update", {
+                      studentId, courseId,
+                      lessonId: current.lessonId,
+                      watchedSeconds: totalSec,
+                      totalSeconds: totalSec,
+                    }).catch(() => {});
+                  }
+                }}
               />
             ) : (
               <div className="lp-no-media">
@@ -121,9 +258,14 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
               <span className="lp-chip">
                 <FiLayers size={12} /> Chapter 1
               </span>
-              {completed[current.lessonId] && (
+              {isCurrentCompleted && (
                 <span className="lp-chip done">
                   <FiCheckCircle size={12} /> Completed
+                </span>
+              )}
+              {!isCurrentCompleted && currentLessonProg.percent > 0 && (
+                <span className="lp-chip">
+                  {currentLessonProg.percent}% watched
                 </span>
               )}
             </div>
@@ -150,15 +292,16 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
             <p className="lp-playlist-title">Playlist</p>
             <p className="lp-playlist-count">{lessons.length} Videos</p>
             <div className="lp-playlist-progress-track">
-              <div className="lp-playlist-progress-fill" style={{ width: `${progress}%` }} />
+              <div className="lp-playlist-progress-fill" style={{ width: `${courseProgress}%` }} />
             </div>
-            <p className="lp-playlist-progress-label">{progress}% Complete</p>
+            <p className="lp-playlist-progress-label">{courseProgress}% Complete</p>
           </div>
 
           <div className="lp-playlist-list">
             {lessons.map((lesson, i) => {
               const isActive = String(lesson.lessonId) === String(lessonId);
-              const isDone   = !!completed[lesson.lessonId];
+              const lp       = lessonProgress[lesson.lessonId] || { percent: 0, completed: false };
+              const isDone   = lp.completed;
 
               return (
                 <div
@@ -198,8 +341,10 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
                       <span>|</span>
                       {isDone ? (
                         <><span className="lp-pl-done-dot" /> Completed</>
+                      ) : lp.percent > 0 ? (
+                        <span>{lp.percent}% Watched</span>
                       ) : (
-                        <span>{isActive ? "In Progress" : "0% Completed"}</span>
+                        <span>{isActive ? "In Progress" : "Not Started"}</span>
                       )}
                     </div>
                   </div>

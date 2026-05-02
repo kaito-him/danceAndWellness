@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 public class InstructorEnrollmentRow {
 
     private String enrollmentId;
+    private String courseId;
+    private String studentId;
     private String studentName;   // resolved from User collection
     private String studentEmail;  // resolved from User collection
     private String courseTitle;   // resolved from Course collection
@@ -24,6 +26,11 @@ public class InstructorEnrollmentRow {
     public void   setEnrollmentId(String v)    { this.enrollmentId = v; }
 
     public String getStudentName()             { return studentName; }
+    public String getCourseId()                { return courseId; }
+    public void   setCourseId(String v)        { this.courseId = v; }
+    public String getStudentId()               { return studentId; }
+    public void   setStudentId(String v)       { this.studentId = v; }
+
     public void   setStudentName(String v)     { this.studentName = v; }
 
     public String getStudentEmail()            { return studentEmail; }

@@ -27,6 +27,7 @@ public class PaymentService {
 
     private final CourseRepository      courseRepository;
     private final EnrollmentRepository  enrollmentRepository;
+    private final NotificationService   notificationService;
 
 
 	@PostConstruct
@@ -73,6 +74,9 @@ public class PaymentService {
         if (enrollmentRepository.existsByStudentIdAndCourseId(req.getStudentId(), req.getCourseId()))
             return enrollmentRepository.findByPaymentIntentId(req.getPaymentIntentId()).orElseThrow();
 
+        Course course = courseRepository.findById(req.getCourseId())
+            .orElseThrow(() -> new RuntimeException("Course not found"));
+
         Enrollment enrollment = Enrollment.builder()
             .studentId(req.getStudentId())
             .courseId(req.getCourseId())
@@ -81,7 +85,17 @@ public class PaymentService {
             .enrolledAt(LocalDateTime.now())
             .build();
 
-        return enrollmentRepository.save(enrollment);
+        Enrollment saved = enrollmentRepository.save(enrollment);
+        if (course.getInstructor() != null && course.getInstructor().getUserId() != null) {
+            notificationService.create(
+                course.getInstructor().getUserId(),
+                "A student enrolled in your course \"" + course.getTitle() + "\".",
+                "COURSE_ENROLLMENT",
+                course.getCourseId(),
+                false
+            );
+        }
+        return saved;
     }
 
     // ── Utility: check if a student is already enrolled ─────────────────

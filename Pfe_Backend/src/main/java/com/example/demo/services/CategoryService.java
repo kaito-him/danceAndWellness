@@ -19,6 +19,13 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
+    public void deleteCategory(String id) {
+        if (!categoryRepository.existsById(id)) {
+            throw new RuntimeException("Category not found with id: " + id);
+        }
+        categoryRepository.deleteById(id);
+    }
+    
     // ✅ Get all categories
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();

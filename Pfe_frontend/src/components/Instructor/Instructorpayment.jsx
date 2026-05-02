@@ -24,14 +24,15 @@ const initials = (name) =>
   name ? name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
 // ─── component ───────────────────────────────────────────────────────────────
-export default function InstructorPayment({ instructorId: propInstructorId }) {
+export default function InstructorPayment({ instructorId: propInstructorId, onStudentClick, onCourseClick }) {
   const [instructorId, setInstructorId] = useState(propInstructorId || null);
+  const [instructorAppliedAt, setInstructorAppliedAt] = useState(null);
   const [status, setStatus]       = useState(null);   // Stripe account status
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [onboarding, setOnboarding] = useState(false);
   const [search, setSearch]       = useState("");
-  const [typeFilter, setTypeFilter] = useState("ALL");
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
   const [toast, setToast]         = useState(null);
 
   // ── data fetch ─────────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
         const instRes = await api.get(`/instructors/by-user/${userId}`);
         activeId = instRes.data.id;
         setInstructorId(activeId);
+        setInstructorAppliedAt(instRes.data.appliedAt || null);
       }
 
       if (!activeId) return;
@@ -55,7 +57,8 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
         api.get(`/instructor/payments/${activeId}/enrollments`),
       ]);
       setStatus(statusRes.data);
-      setEnrollments(Array.isArray(enrollRes.data) ? enrollRes.data : []);
+      const all = Array.isArray(enrollRes.data) ? enrollRes.data : [];
+      setEnrollments(all.filter((e) => e.enrollmentType === "PAID"));
     } catch {
       showToast("Failed to load payment data.", "error");
     } finally {
@@ -102,20 +105,64 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
   };
 
   // ── derived stats ──────────────────────────────────────────────────────────
-  const paidRows     = enrollments.filter((e) => e.enrollmentType === "PAID");
+  const paidRows     = enrollments;
   const totalRevenue = paidRows.reduce((s, e) => s + (e.instructorShareCents || 0), 0);
   const totalGross   = paidRows.reduce((s, e) => s + (e.amountPaidCents || 0), 0);
 
+  const monthLabel = (d) =>
+    d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+  const monthlyRevenue = (() => {
+    const map = new Map();
+    paidRows.forEach((e) => {
+      if (!e.enrolledAt) return;
+      const dt = Array.isArray(e.enrolledAt)
+        ? new Date(e.enrolledAt[0], e.enrolledAt[1] - 1, e.enrolledAt[2])
+        : new Date(e.enrolledAt);
+      const k = monthKey(dt);
+      const label = monthLabel(dt);
+      const prev = map.get(k) || { key: k, label, revenueCents: 0, count: 0 };
+      prev.revenueCents += (e.instructorShareCents || 0);
+      prev.count += 1;
+      map.set(k, prev);
+    });
+
+    const arr = Array.from(map.values()).sort((a, b) => (a.key > b.key ? -1 : 1));
+
+    if (instructorAppliedAt) {
+      const start = new Date(instructorAppliedAt);
+      if (!Number.isNaN(start.getTime())) {
+        const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+        const end = new Date();
+        const pad = [];
+        while (cursor <= end) {
+          const k = monthKey(cursor);
+          const found = map.get(k);
+          pad.push(found || { key: k, label: monthLabel(cursor), revenueCents: 0, count: 0 });
+          cursor.setMonth(cursor.getMonth() + 1);
+        }
+        return pad.sort((a, b) => (a.key > b.key ? -1 : 1));
+      }
+    }
+    return arr;
+  })();
+
   // ── filter logic ───────────────────────────────────────────────────────────
-  const filtered = enrollments.filter((e) => {
-    const matchesType = typeFilter === "ALL" || e.enrollmentType === typeFilter;
+  const filtered = paidRows.filter((e) => {
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
       (e.studentName  || "").toLowerCase().includes(q) ||
       (e.courseTitle  || "").toLowerCase().includes(q) ||
       (e.studentEmail || "").toLowerCase().includes(q);
-    return matchesType && matchesSearch;
+    if (selectedMonth === "ALL") return matchesSearch;
+    if (!e.enrolledAt) return false;
+    const dt = Array.isArray(e.enrolledAt)
+      ? new Date(e.enrolledAt[0], e.enrolledAt[1] - 1, e.enrolledAt[2])
+      : new Date(e.enrolledAt);
+    return monthKey(dt) === selectedMonth && matchesSearch;
   });
 
   // ── stripe status helpers ──────────────────────────────────────────────────
@@ -179,7 +226,7 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
         <div className="ip-stat-card">
           <div className="ip-stat-label">Total Enrollments</div>
           <div className="ip-stat-value blue">{enrollments.length}</div>
-          <div className="ip-stat-sub">{enrollments.filter(e => e.enrollmentType === "FREE").length} free · {paidRows.length} paid</div>
+          <div className="ip-stat-sub">{paidRows.length} paid transactions</div>
         </div>
         <div className="ip-stat-card">
           <div className="ip-stat-label">Platform Fee</div>
@@ -256,10 +303,25 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
         )}
       </div>
 
-      {/* ── Enrollments section ── */}
-      <div className="ip-section-head">
-        <span className="ip-section-title">Student Enrollments</span>
-        <span className="ip-section-count">{filtered.length} record{filtered.length !== 1 ? "s" : ""}</span>
+      <div className="acf-price-tiers" style={{ marginBottom: 10 }}>
+        <button
+          type="button"
+          className={`acf-tier-chip ${selectedMonth === "ALL" ? "active" : ""}`}
+          onClick={() => setSelectedMonth("ALL")}
+        >
+          All Months
+        </button>
+        {monthlyRevenue.map((m) => (
+          <button
+            key={m.key}
+            type="button"
+            className={`acf-tier-chip ${selectedMonth === m.key ? "active" : ""}`}
+            onClick={() => setSelectedMonth(m.key)}
+            title={`${m.count} transaction(s)`}
+          >
+            {m.label}: {fmt(m.revenueCents) || "$0.00"}
+          </button>
+        ))}
       </div>
 
       {/* Filter toolbar */}
@@ -272,15 +334,9 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="ip-filter-select"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-        >
-          <option value="ALL">All Types</option>
-          <option value="PAID">Paid</option>
-          <option value="FREE">Free</option>
-        </select>
+        <div className="ip-filter-select" style={{ display: "flex", alignItems: "center" }}>
+          Paid only
+        </div>
       </div>
 
       {/* Table */}
@@ -301,7 +357,6 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
               <tr>
                 <th>Student</th>
                 <th>Course</th>
-                <th>Type</th>
                 <th>Course Fee</th>
                 <th>Your Share (80%)</th>
                 <th>Date</th>
@@ -314,11 +369,25 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
                   {/* Student */}
                   <td>
                     <div className="ip-student-cell">
-                      <div className="ip-student-avatar">
+                      <button
+                        type="button"
+                        className="ip-student-avatar"
+                        style={{ border: "none", cursor: "pointer" }}
+                        onClick={() => onStudentClick?.(row.studentId)}
+                        title="Open student profile"
+                      >
                         {initials(row.studentName)}
-                      </div>
+                      </button>
                       <div>
-                        <div className="ip-student-name">{row.studentName || "—"}</div>
+                        <button
+                          type="button"
+                          className="ip-student-name"
+                          style={{ border: "none", background: "none", padding: 0, cursor: "pointer" }}
+                          onClick={() => onStudentClick?.(row.studentId)}
+                          title="Open student profile"
+                        >
+                          {row.studentName || "—"}
+                        </button>
                         <div className="ip-student-email">{row.studentEmail || ""}</div>
                       </div>
                     </div>
@@ -326,28 +395,27 @@ export default function InstructorPayment({ instructorId: propInstructorId }) {
 
                   {/* Course */}
                   <td>
-                    <span className="ip-course-title" title={row.courseTitle}>
+                    <button
+                      type="button"
+                      className="ip-course-title"
+                      style={{ border: "none", background: "none", padding: 0, cursor: "pointer" }}
+                      onClick={() => onCourseClick?.(row.courseId)}
+                      title={row.courseTitle}
+                    >
                       {row.courseTitle || "—"}
-                    </span>
-                  </td>
-
-                  {/* Type */}
-                  <td>
-                    <span className={`ip-type-badge ${row.enrollmentType}`}>
-                      {row.enrollmentType === "PAID" ? "💳" : "🎁"} {row.enrollmentType}
-                    </span>
+                    </button>
                   </td>
 
                   {/* Course fee */}
                   <td>
-                    {row.enrollmentType === "PAID" && row.amountPaidCents > 0
+                    {row.amountPaidCents > 0
                       ? <span className="ip-amount-total">{fmt(row.amountPaidCents)}</span>
-                      : <span className="ip-amount-free">Free</span>}
+                      : <span className="ip-amount-free">—</span>}
                   </td>
 
                   {/* Your share */}
                   <td>
-                    {row.enrollmentType === "PAID" && row.instructorShareCents > 0
+                    {row.instructorShareCents > 0
                       ? <span className="ip-amount-share">{fmt(row.instructorShareCents)}</span>
                       : <span className="ip-amount-free">—</span>}
                   </td>

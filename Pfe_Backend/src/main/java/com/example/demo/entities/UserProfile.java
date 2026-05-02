@@ -19,14 +19,14 @@ public class UserProfile {
 
     @Id
     private String id;
+    
+    private String studentId; 
 
     private List<Category> preferences;
 
     private DifficultyLevel skillLevel;
 
-    private Integer totalWatchTime;
-
-    private Double avgSessionDuration;
-
-    private Double completionRate;
+    // ── Auto-computed from progress ───────────────────────────────────────
+    private Integer totalWatchTime;   // total seconds watched across ALL courses
+    private Double  completionRate;   // avg course completion % across ALL courses
 }

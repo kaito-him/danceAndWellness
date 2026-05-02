@@ -48,4 +48,14 @@ public class InstructorPaymentController {
             @PathVariable String instructorId) {
         return ResponseEntity.ok(paymentService.getEnrollments(instructorId));
     }
+
+    /**
+     * GET /api/instructor/payments/course/{courseId}/enrollments
+     * Returns all enrollments for a specific course (for admin use).
+     */
+    @GetMapping("/course/{courseId}/enrollments")
+    public ResponseEntity<List<InstructorEnrollmentRow>> getCourseEnrollments(
+            @PathVariable String courseId) {
+        return ResponseEntity.ok(paymentService.getEnrollmentsByCourse(courseId));
+    }
 }

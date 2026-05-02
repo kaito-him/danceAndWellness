@@ -4,7 +4,7 @@ import "../../styles/AdminCourseDetail.css";
 const BASE = "http://localhost:8080";
 const toSrc = (url) => (url ? (url.startsWith("/api") ? `${BASE}${url}` : url) : null);
 
-export default function AdminCourseDetail({ course, onClose, onApprove, onArchive }) {
+export default function AdminCourseDetail({ course, onClose, onArchive }) {
   const [activeLesson, setActiveLesson] = useState(0);
   const [activeTab,    setActiveTab]    = useState("lessons"); // "lessons" | "quizzes"
 
@@ -13,7 +13,6 @@ export default function AdminCourseDetail({ course, onClose, onApprove, onArchiv
   const quizzes   = course.quizzes  ?? [];
   const currentLesson = lessons[activeLesson];
 
-  const handleApprove = () => { onApprove(course.courseId); onClose(); };
   const handleArchive = () => { onArchive(course.courseId); onClose(); };
 
   return (
@@ -23,7 +22,6 @@ export default function AdminCourseDetail({ course, onClose, onApprove, onArchiv
         {/* ── Header ── */}
         <div className="acd-head">
           <div className="acd-head-info">
-            <div className="acd-badge">Pending Review</div>
             <h2 className="acd-title">{course.title}</h2>
             <div className="acd-tags">
               <span className="acd-tag acd-tag-cat">{course.category}</span>
@@ -192,13 +190,6 @@ export default function AdminCourseDetail({ course, onClose, onApprove, onArchiv
               <line x1="10" y1="12" x2="14" y2="12"/>
             </svg>
             Archive
-          </button>
-          <button className="acd-btn-approve" onClick={handleApprove}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            Approve & Publish
           </button>
         </div>
 

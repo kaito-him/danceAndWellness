@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
+import logo from "../assets/Dicone.png";
 
 const Navbar = ({ instructorsRef }) => {
   const { pathname } = useLocation();
@@ -28,7 +29,10 @@ const Navbar = ({ instructorsRef }) => {
 
   return (
     <header className="navbar">
-      <Link to="/" className="logo">Dance &amp; Wellness</Link>
+      <Link to="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <img src={logo} alt="Logo" style={{ height: '42px', width: 'auto' }} />
+        Dance &amp; Wellness
+      </Link>
       <nav className="nav-links">
         {NAV_LINKS.map(({ label, to }) => (
           <Link

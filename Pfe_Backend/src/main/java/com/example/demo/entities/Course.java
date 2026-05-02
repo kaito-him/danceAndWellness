@@ -25,6 +25,11 @@ public class Course {
 	private LocalDateTime createdAt;
 	private String categoryId;
 	private Instructor instructor;
+	private Boolean archivedByAdmin = false;
+	private String archiveReason;
+	private LocalDateTime archivedAt;
+
+	private String description;
 
 	private List<Lesson> lessons;
 	private List<Quiz> quizzes;

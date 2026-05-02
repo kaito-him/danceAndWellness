@@ -25,11 +25,11 @@ const openLessons = (courseId, navigate) => {
 
 // ── Checkout form ─────────────────────────────────────────────────────────────
 function CheckoutForm({ course, clientSecret, paymentIntentId, studentId, onSuccess }) {
-  const stripe   = useStripe();
+  const stripe = useStripe();
   const elements = useElements();
 
   const [processing, setProcessing] = useState(false);
-  const [cardError,  setCardError]  = useState(null);
+  const [cardError, setCardError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +53,7 @@ function CheckoutForm({ course, clientSecret, paymentIntentId, studentId, onSucc
       // Tell backend to save the enrollment
       await api.post("/enrollment/confirm", {
         paymentIntentId,
-        courseId:  course.courseId,
+        courseId: course.courseId,
         studentId,
       });
       onSuccess();
@@ -129,16 +129,24 @@ function CheckoutForm({ course, clientSecret, paymentIntentId, studentId, onSucc
 // ── Page wrapper ──────────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const { courseId } = useParams();
-  const navigate     = useNavigate();
+  const navigate = useNavigate();
+  const userRole = localStorage.getItem("userRole");
+
+  useEffect(() => {
+    if (userRole === "INSTRUCTOR") {
+      // Redirect to student dashboard which will show the switch modal for this course
+      returnToCourse(courseId, navigate);
+    }
+  }, [userRole, courseId, navigate]);
 
   const studentId = localStorage.getItem("userId") || "demo-student-id";
 
-  const [course,          setCourse]          = useState(null);
-  const [clientSecret,    setClientSecret]    = useState(null);
+  const [course, setCourse] = useState(null);
+  const [clientSecret, setClientSecret] = useState(null);
   const [paymentIntentId, setPaymentIntentId] = useState(null);
-  const [loading,         setLoading]         = useState(true);
-  const [error,           setError]           = useState(null);
-  const [paid,            setPaid]            = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [paid, setPaid] = useState(false);
 
   useEffect(() => {
     const init = async () => {

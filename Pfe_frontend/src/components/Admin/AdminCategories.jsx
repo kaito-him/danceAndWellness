@@ -15,6 +15,8 @@ export default function AdminCategories() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null);
     const [preview, setPreview] = useState(null);
@@ -51,6 +53,29 @@ export default function AdminCategories() {
     useEffect(() => {
         fetchCategories();
     }, []);
+
+    /* ── delete ────────────────────────────────────────── */
+    const initiateDelete = (cat) => {
+        setCategoryToDelete(cat);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDeleteSubmit = async () => {
+        if (!categoryToDelete) return;
+        setSubmitting(true);
+        try {
+            await api.delete(`/categories/${categoryToDelete.id}`);
+            showToast("success", "Category deleted successfully!");
+            fetchCategories();
+            setShowDeleteConfirm(false);
+            setCategoryToDelete(null);
+        } catch (err) {
+            console.error(err);
+            showToast("error", "Failed to delete category.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     /* ── file upload ───────────────────────────────────── */
     const handleFileChange = (e) => {
@@ -129,8 +154,42 @@ export default function AdminCategories() {
             ) : (
                 <div className="cat-grid">
                     {categories.map((cat) => (
-                        <CategoryCard key={cat.id} category={cat} />
+                        <CategoryCard 
+                            key={cat.id} 
+                            category={cat} 
+                            onDelete={initiateDelete}
+                        />
                     ))}
+                </div>
+            )}
+
+            {/* ── Delete Confirmation Modal ─────────────────── */}
+            {showDeleteConfirm && (
+                <div className="cat-overlay" onClick={() => setShowDeleteConfirm(false)}>
+                    <div className="cat-modal confirm" onClick={(e) => e.stopPropagation()}>
+                        <div className="cat-modal-header">
+                            <h2>Delete Category</h2>
+                            <button className="cat-modal-close" onClick={() => setShowDeleteConfirm(false)}>
+                                <FiX size={18} />
+                            </button>
+                        </div>
+                        <div className="cat-modal-body">
+                            <p>Are you sure you want to delete <strong>{categoryToDelete?.name}</strong> forever?</p>
+                            <span>This action cannot be undone and may affect courses using this category.</span>
+                        </div>
+                        <div className="cat-modal-footer">
+                            <button className="cat-btn-cancel" onClick={() => setShowDeleteConfirm(false)}>
+                                Keep Category
+                            </button>
+                            <button 
+                                className="cat-btn-delete" 
+                                onClick={handleDeleteSubmit}
+                                disabled={submitting}
+                            >
+                                {submitting ? "Deleting..." : "Yes, Delete Forever"}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
