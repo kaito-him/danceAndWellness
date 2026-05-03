@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiAward, FiCheckCircle, FiXCircle, FiUsers } from "react-icons/fi";
 import api from "./../services/api";
-import "../../styles/AdminBadges.css";
+import "../../styles/AdminBadges.css"; // eslint-disable-line
 
 function AuthImage({ path, alt, className }) {
   const [src, setSrc] = useState(null);
