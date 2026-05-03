@@ -27,7 +27,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
 
         // ── Bypass auth endpoints entirely ────────────────────────────────
-        if (path.startsWith("/api/auth")) {
+        if (path.startsWith("/api/auth") || path.startsWith("/auth")) {
             chain.doFilter(request, response);
             return;
         }
@@ -67,8 +67,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
             } catch (Exception e) {
                 System.out.println(">>> JWT Filter Error: " + e.getMessage());
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
+                // Don't block the request — let Spring Security handle authorization
+                // This allows public endpoints to still work with a bad/expired token
             }
         } else {
             System.out.println(">>> No token found (header or query param) for: " + path);

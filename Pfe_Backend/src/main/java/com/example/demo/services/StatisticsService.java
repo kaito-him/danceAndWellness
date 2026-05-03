@@ -65,6 +65,10 @@ public class StatisticsService {
                                 .filter(u -> AccountStatus.PENDING.equals(u.getStatus())
                                                 && "INSTRUCTOR".equalsIgnoreCase(u.getRole()))
                                 .count();
+                long activeStudents = allUsers.stream()
+                                .filter(u -> AccountStatus.ACTIVE.equals(u.getStatus())
+                                                && "STUDENT".equalsIgnoreCase(u.getRole()))
+                                .count();
 
                 // ── Enrollments / Payments ────────────────────────────────────────
                 List<Enrollment> enrollments = enrollmentRepository.findAll();
@@ -91,6 +95,7 @@ public class StatisticsService {
                                 .activeAccounts(activeAccounts)
                                 .bannedAccounts(bannedAccounts)
                                 .pendingInstructorApplications(pendingApplications)
+                                .activeStudents(activeStudents)
                                 .totalEnrollments(totalEnrollments)
                                 .paidEnrollments(paidEnrollments)
                                 .freeEnrollments(freeEnrollments)

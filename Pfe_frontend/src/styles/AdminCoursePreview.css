@@ -508,3 +508,138 @@
   transform: translateY(-1px);
   filter: brightness(1.1);
 }
+
+/* ── Curriculum Tabs ── */
+.aprev-curr-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--ad-surface2);
+  border: 1px solid var(--ad-border);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.aprev-curr-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ad-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aprev-curr-tab:hover {
+  color: var(--ad-text);
+  background: var(--ad-surface);
+}
+
+.aprev-curr-tab.active {
+  background: var(--ad-gold);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(184, 156, 77, 0.35);
+}
+
+.aprev-curr-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.25);
+  color: inherit;
+}
+
+.aprev-curr-tab:not(.active) .aprev-curr-badge {
+  background: var(--ad-surface);
+  color: var(--ad-muted);
+}
+
+/* ── Quiz Cards ── */
+.aprev-quiz-card {
+  border: 1px solid var(--ad-border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.aprev-quiz-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  background: var(--ad-surface2);
+}
+
+.aprev-quiz-questions {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.aprev-quiz-question {
+  padding: 14px 16px;
+  background: var(--ad-surface);
+  border-radius: 10px;
+  border: 1px solid var(--ad-border);
+}
+
+.aprev-quiz-q-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ad-text);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.aprev-quiz-q-num {
+  color: var(--ad-gold);
+  margin-right: 4px;
+}
+
+.aprev-quiz-options {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aprev-quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ad-text-sub);
+  background: var(--ad-surface2);
+  border: 1.5px solid transparent;
+  transition: background 0.15s;
+}
+
+.aprev-quiz-option.correct {
+  background: #f0faf4;
+  border-color: #27ae60;
+  color: #1a7a40;
+  font-weight: 600;
+}
+
+.aprev-quiz-opt-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #27ae60;
+}

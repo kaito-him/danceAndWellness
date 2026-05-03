@@ -90,4 +90,19 @@ public class EmailService {
         helper.setText(htmlContent, true);
         mailSender.send(message);
     }
+
+    public void sendPasswordResetCode(String toEmail, String username, String code) throws MessagingException {
+        Context ctx = new Context();
+        ctx.setVariable("username", username);
+        ctx.setVariable("code", code);
+
+        String htmlContent = templateEngine.process("password-reset", ctx);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setTo(toEmail);
+        helper.setSubject("Dance&Wellness – Your Password Reset Code");
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
+    }
 }

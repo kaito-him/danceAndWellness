@@ -7,5 +7,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import com.example.demo.entities.Student;
 
 public interface StudentRepository extends MongoRepository<Student, String> {
-	Optional<Student> findByUserId(String userId); 
+    Optional<Student> findByUserId(String userId);
+    long countByBadgeIdsContaining(String badgeId);
 }

@@ -1,16 +1,18 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // ← add useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../components/services/api";
 import "../styles/Login.css";
 import Navbar from "../components/Navbar";
+import ForgotPassword from "../components/ForgotPassword";
 
 const Login = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // ← new
+  const location = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
 
   // Where to send the user after login — course page or role dashboard
   const redirectTo = location.state?.from || null;
@@ -133,7 +135,9 @@ const Login = () => {
             )}
 
             <div className="forgot-row">
-              <a href="#" className="forgot-link">Forgot password?</a>
+              <button type="button" className="forgot-link" onClick={() => setShowForgot(true)}>
+                Forgot password?
+              </button>
             </div>
 
             <button type="submit" className="login-button" disabled={loading}>
@@ -147,6 +151,7 @@ const Login = () => {
           </p>
         </div>
       </div>
+      {showForgot && <ForgotPassword onClose={() => setShowForgot(false)} />}
     </div>
   );
 };

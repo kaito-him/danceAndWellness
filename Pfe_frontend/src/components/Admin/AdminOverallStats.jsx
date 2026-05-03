@@ -96,7 +96,7 @@ export default function AdminOverallStats() {
           icon={FiUsers} 
           label="Total Students" 
           value={stats.totalStudents} 
-          trend={`${stats.activeAccounts} active`} 
+          trend={`${stats.activeStudents ?? stats.totalStudents} active`} 
           color="blue"
         />
         <StatCard 
@@ -197,8 +197,7 @@ export default function AdminOverallStats() {
               <h3>User Health</h3>
             </div>
             <div className="aos-status-rows">
-              <StatusRow label="Active Accounts" val={stats.activeAccounts} icon={FiUserCheck} color="#22783c" />
-              <StatusRow label="Banned Accounts" val={stats.bannedAccounts} icon={FiShieldOff} color="#e53e3e" />
+              <StatusRow label="Active Users (Students + Instructors)" val={stats.activeAccounts} icon={FiUserCheck} color="#22783c" />              <StatusRow label="Banned Accounts" val={stats.bannedAccounts} icon={FiShieldOff} color="#e53e3e" />
               <StatusRow label="Pending Instructors" val={stats.pendingInstructorApplications} icon={FiActivity} color="#b89c4d" />
             </div>
           </div>

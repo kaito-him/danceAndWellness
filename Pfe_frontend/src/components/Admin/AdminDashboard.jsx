@@ -110,7 +110,10 @@ const AdminPublishedCourses = ({ onArchive, onPreview }) => {
 
   const filtered = useMemo(() => {
     let list = [...courses];
-    if (filterCat !== "ALL") list = list.filter(c => c.category === filterCat);
+    if (filterCat !== "ALL") list = list.filter(c => {
+      const cat = cats.find(cat => cat.id === c.categoryId);
+      return cat?.name === filterCat;
+    });
     if (filterLevel !== "ALL") list = list.filter(c => c.level === filterLevel);
     if (activeQuery) {
       const q = activeQuery.toLowerCase();
@@ -624,6 +627,9 @@ export default function AdminDashboard() {
       // Handle course-preview section with courseId
       if (section === "course-preview" && courseId) {
         setPreviewCourseId(courseId);
+      } else if (section !== "course-preview") {
+        // Always clear preview when navigating away (e.g. category click from preview)
+        setPreviewCourseId(null);
       }
     } else {
       // Default to feed if no valid section
@@ -849,7 +855,7 @@ export default function AdminDashboard() {
 
           <UserChip
             user={adminUser}
-            onProfileClick={() => setActiveSection("profile")}
+            onProfileClick={() => handleSectionChange("profile")}
           />
         </div>
       </header>

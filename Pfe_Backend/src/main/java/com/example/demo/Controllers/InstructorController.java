@@ -24,9 +24,6 @@ public class InstructorController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
-    /**
-     * GET /api/instructors/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Instructor> getById(@PathVariable String id) {
         return instructorService.getInstructorById(id)
@@ -34,26 +31,25 @@ public class InstructorController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    
     @GetMapping
     public ResponseEntity<List<InstructorDTO>> getAll() {
         return ResponseEntity.ok(instructorService.getAllInstructors());
     }
-    
+
     @GetMapping("/featured")
     public ResponseEntity<List<InstructorDTO>> getFeatured() {
         return ResponseEntity.ok(instructorService.getFeaturedInstructors());
     }
- 
+
     /**
-     * 
      * GET /api/instructors/{id}/courses
-     * Returns all courses published by the given instructor.
+     * Returns ALL courses by the given instructor (all statuses) — used by admin.
      */
     @GetMapping("/{id}/courses")
     public ResponseEntity<List<Course>> getCourses(@PathVariable String id) {
-        return ResponseEntity.ok(instructorService.getCoursesByInstructor(id));
+        return ResponseEntity.ok(instructorService.getAllCoursesByInstructor(id));
     }
+
     @PatchMapping("/{id}/photo")
     public ResponseEntity<?> updatePhoto(
             @PathVariable String id,
@@ -64,35 +60,31 @@ public class InstructorController {
             return ResponseEntity.badRequest().body(Map.of("error", "photo is required."));
         }
 
-        Instructor instructor = instructorService.getInstructorById(id)
-                .orElse(null);
+        Instructor instructor = instructorService.getInstructorById(id).orElse(null);
         if (instructor == null) return ResponseEntity.notFound().build();
 
-        instructor.setPhoto(photoId);	
-        
-        // Sync to User
+        instructor.setPhoto(photoId);
+
         userRepository.findById(instructor.getUserId()).ifPresent(u -> {
             u.setPhoto(photoId);
             userRepository.save(u);
         });
- 
+
         return ResponseEntity.ok(instructorService.saveInstructor(instructor));
     }
-    
+
     @DeleteMapping("/{id}/photo")
     public ResponseEntity<?> removePhoto(@PathVariable String id) {
-        Instructor instructor = instructorService.getInstructorById(id)
-                .orElse(null);
+        Instructor instructor = instructorService.getInstructorById(id).orElse(null);
         if (instructor == null) return ResponseEntity.notFound().build();
 
         instructor.setPhoto(null);
-        
-        // Sync to User
+
         userRepository.findById(instructor.getUserId()).ifPresent(u -> {
             u.setPhoto(null);
             userRepository.save(u);
         });
-        
+
         return ResponseEntity.ok(instructorService.saveInstructor(instructor));
     }
 
@@ -103,23 +95,6 @@ public class InstructorController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * PATCH /api/instructors/{id}
-     *
-     * Body:
-     * {
-     *   "currentPassword": "secret123",
-     *   "instructor": {
-     *     "username":   "new_name",       // optional
-     *     "email":      "new@email.com",  // optional
-     *     "photo":      "<gridfs-id>",    // optional
-     *     "studioName": "Dance Hub",      // optional
-     *     "bio":        "...",            // optional
-     *     "linkedIn":   "https://...",    // optional
-     *     "website":    "https://..."     // optional
-     *   }
-     * }
-     */
     @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable String id,
@@ -131,8 +106,6 @@ public class InstructorController {
                     .body(Map.of("error", "currentPassword is required."));
         }
 
-        // Re-use the Instructor entity as the updates carrier
-        // (only the fields listed above are read by the service)
         @SuppressWarnings("unchecked")
         Map<String, Object> instructorMap =
                 (Map<String, Object>) body.getOrDefault("instructor", Map.of());
@@ -155,7 +128,7 @@ public class InstructorController {
             }
 
             Instructor updated = instructorService.updateInstructor(id, currentPassword, updates);
-            
+
             String newToken = null;
             User newUser = userRepository.findById(updated.getUserId()).orElse(null);
             if (newUser != null && oldUsername != null && !newUser.getUsername().equals(oldUsername)) {

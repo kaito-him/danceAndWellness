@@ -20,6 +20,7 @@ export default function AdminCoursePreview({ courseId, onBack, onStudentProfile 
   const [showComments, setShowComments] = useState(false);
   const [activeLesson, setActiveLesson] = useState(null); // For "watching"
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [curriculumTab, setCurriculumTab] = useState("lessons"); // "lessons" | "quizzes"
   const [rows, setRows] = useState([]);
   const [progressTarget, setProgressTarget] = useState(null);
   const [progressData, setProgressData] = useState(null);
@@ -188,6 +189,20 @@ export default function AdminCoursePreview({ courseId, onBack, onStudentProfile 
               </div>
             </div>
 
+            {categoryName && (
+              <div
+                className="aprev-meta-item clickable"
+                onClick={() => setSearchParams({ section: "feed", category: categoryName })}
+                title={`Browse all "${categoryName}" courses`}
+              >
+                <div className="aprev-meta-icon"><FiBookmark size={18} /></div>
+                <div className="aprev-meta-info">
+                  <span className="aprev-meta-lbl">Category</span>
+                  <span className="aprev-meta-val" style={{ color: 'var(--ad-gold)' }}>{categoryName}</span>
+                </div>
+              </div>
+            )}
+
             <div className="aprev-meta-item">
               <div className="aprev-meta-icon"><FiUsers size={18} /></div>
               <div className="aprev-meta-info">
@@ -238,60 +253,117 @@ export default function AdminCoursePreview({ courseId, onBack, onStudentProfile 
                 </div>
 
                 <section className="aprev-section">
-                  <h3 className="aprev-section-title">Curriculum Structure</h3>
-                  <div className="aprev-curriculum">
-                    {lessons.map((lesson, idx) => {
-                      const isActive = activeLesson?.lessonId === lesson.lessonId;
-                      return (
-                        <div key={lesson.lessonId} className="aprev-lesson-group">
-                          <div 
-                            className={`aprev-lesson-row ${isActive ? 'active' : ''}`}
-                            onClick={() => setActiveLesson(isActive ? null : lesson)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className="aprev-lesson-idx">{idx + 1}</div>
-                            <div className="aprev-lesson-info">
-                              <span className="aprev-lesson-title">{lesson.title}</span>
-                              <span className="aprev-lesson-meta">
-                                <FiVideo size={12} /> {lesson.duration}m
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div className="aprev-lesson-tag">{isActive ? "Watching" : "Click to Watch"}</div>
-                              {isActive ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
-                            </div>
-                          </div>
-                          
-                          {isActive && (
-                            <div className="aprev-inline-player">
-                              {lesson.mediaUrl ? (
-                                <video 
-                                  src={`http://localhost:8080${lesson.mediaUrl}`} 
-                                  controls 
-                                  autoPlay 
-                                  className="aprev-inline-video"
-                                />
-                              ) : (
-                                <div className="aprev-video-placeholder">No video source found</div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {quizzes.map((quiz, idx) => (
-                      <div key={quiz.quizId} className="aprev-lesson-row quiz">
-                        <div className="aprev-lesson-idx"><FiFileText size={14} /></div>
-                        <div className="aprev-lesson-info">
-                          <span className="aprev-lesson-title">{quiz.title}</span>
-                          <span className="aprev-lesson-meta">
-                            {quiz.questions?.length || 0} Questions
-                          </span>
-                        </div>
-                        <div className="aprev-lesson-tag quiz">Knowledge Check</div>
-                      </div>
-                    ))}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <h3 className="aprev-section-title" style={{ margin: 0 }}>Curriculum Structure</h3>
+                    <div className="aprev-curr-tabs">
+                      <button
+                        className={`aprev-curr-tab ${curriculumTab === "lessons" ? "active" : ""}`}
+                        onClick={() => setCurriculumTab("lessons")}
+                      >
+                        <FiPlay size={13} /> Lessons
+                        <span className="aprev-curr-badge">{lessons.length}</span>
+                      </button>
+                      <button
+                        className={`aprev-curr-tab ${curriculumTab === "quizzes" ? "active" : ""}`}
+                        onClick={() => setCurriculumTab("quizzes")}
+                      >
+                        <FiHelpCircle size={13} /> Quizzes
+                        <span className="aprev-curr-badge">{quizzes.length}</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {curriculumTab === "lessons" && (
+                    <div className="aprev-curriculum">
+                      {lessons.length === 0 && (
+                        <p className="aprev-description" style={{ color: "#999", fontStyle: "italic" }}>No lessons yet.</p>
+                      )}
+                      {lessons.map((lesson, idx) => {
+                        const isActive = activeLesson?.lessonId === lesson.lessonId;
+                        return (
+                          <div key={lesson.lessonId} className="aprev-lesson-group">
+                            <div
+                              className={`aprev-lesson-row ${isActive ? 'active' : ''}`}
+                              onClick={() => setActiveLesson(isActive ? null : lesson)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <div className="aprev-lesson-idx">{idx + 1}</div>
+                              <div className="aprev-lesson-info">
+                                <span className="aprev-lesson-title">{lesson.title}</span>
+                                <span className="aprev-lesson-meta">
+                                  <FiVideo size={12} /> {lesson.duration}m
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div className="aprev-lesson-tag">{isActive ? "Watching" : "Click to Watch"}</div>
+                                {isActive ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
+                              </div>
+                            </div>
+                            {isActive && (
+                              <div className="aprev-inline-player">
+                                {lesson.mediaUrl ? (
+                                  <video
+                                    src={`http://localhost:8080${lesson.mediaUrl}`}
+                                    controls
+                                    autoPlay
+                                    className="aprev-inline-video"
+                                  />
+                                ) : (
+                                  <div className="aprev-video-placeholder">No video source found</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {curriculumTab === "quizzes" && (
+                    <div className="aprev-curriculum">
+                      {quizzes.length === 0 && (
+                        <p className="aprev-description" style={{ color: "#999", fontStyle: "italic" }}>No quizzes for this course.</p>
+                      )}
+                      {quizzes.map((quiz, qIdx) => (
+                        <div key={quiz.quizId ?? qIdx} className="aprev-quiz-card">
+                          <div className="aprev-quiz-header">
+                            <div className="aprev-lesson-idx"><FiFileText size={14} /></div>
+                            <div className="aprev-lesson-info">
+                              <span className="aprev-lesson-title">{quiz.title}</span>
+                              <span className="aprev-lesson-meta">{quiz.questions?.length || 0} Questions</span>
+                            </div>
+                            <div className="aprev-lesson-tag" style={{ background: '#fdf3f2', color: '#c0392b' }}>Knowledge Check</div>
+                          </div>
+                          <div className="aprev-quiz-questions">
+                            {(quiz.questions || []).map((qst, qstIdx) => (
+                              <div key={qst.questionId ?? qstIdx} className="aprev-quiz-question">
+                                <p className="aprev-quiz-q-text">
+                                  <span className="aprev-quiz-q-num">Q{qstIdx + 1}.</span> {qst.text}
+                                </p>
+                                <ul className="aprev-quiz-options">
+                                  {(qst.options || []).map((opt, oIdx) => (
+                                    <li
+                                      key={opt.optionId ?? oIdx}
+                                      className={`aprev-quiz-option ${opt.isCorrect ? "correct" : ""}`}
+                                    >
+                                      <span className="aprev-quiz-opt-marker">
+                                        {opt.isCorrect ? (
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        ) : (
+                                          <span style={{ width: 14, height: 14, display: 'inline-block', borderRadius: '50%', border: '1.5px solid #ccc' }} />
+                                        )}
+                                      </span>
+                                      {opt.text}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </section>
               </>
             ) : progressTarget ? (

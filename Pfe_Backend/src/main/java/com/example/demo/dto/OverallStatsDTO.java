@@ -19,6 +19,7 @@ public class OverallStatsDTO {
     private long totalStudents;
     private long totalInstructors;
     private long activeAccounts;
+    private long activeStudents;
     private long bannedAccounts;
     private long pendingInstructorApplications;
 

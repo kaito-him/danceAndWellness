@@ -36,7 +36,6 @@ public class SecurityConfig {
                 // ── Public ────────────────────────────────────────────────
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/courses/published").permitAll()
                 .requestMatchers("/api/auth/register/instructor").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 

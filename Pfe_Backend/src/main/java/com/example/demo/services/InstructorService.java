@@ -157,6 +157,22 @@ public class InstructorService {
     public List<Course> getCoursesByInstructor(String instructorId) {
         return courseRepository.findByInstructor_Id(instructorId);
     }
+
+    /**
+     * Returns ALL courses (all statuses) for the given instructor — used by admin.
+     * Falls back to userId-based lookup if no courses found by instructor._id.
+     */
+    public List<Course> getAllCoursesByInstructor(String instructorId) {
+        List<Course> courses = courseRepository.findByInstructor_Id(instructorId);
+        if (!courses.isEmpty()) return courses;
+        // Fallback: look up by instructor's userId in case the embedded id differs
+        return instructorRepository.findById(instructorId)
+                .map(instructor -> courseRepository.findAll().stream()
+                        .filter(c -> c.getInstructor() != null
+                                && instructor.getUserId().equals(c.getInstructor().getUserId()))
+                        .collect(java.util.stream.Collectors.toList()))
+                .orElse(java.util.List.of());
+    }
  
     // ── Private helper ────────────────────────────────────────────────────
  

@@ -18,6 +18,7 @@ import com.example.demo.entities.User;
 import com.example.demo.exceptions.AccountStatusException;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.services.UserService;
+import com.example.demo.services.PasswordResetService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,6 +27,7 @@ public class AuthController {
 
     @Autowired private UserService userService;
     @Autowired private UserRepository userRepository;
+    @Autowired private PasswordResetService passwordResetService;
     
     
     @PostMapping(value = "/register/instructor", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -101,5 +103,56 @@ public class AuthController {
             "email",    user.getEmail(),
             "role",     user.getRole()
         ));
+    }
+
+    // ── Forgot Password ───────────────────────────────────────────────────────
+
+    @PostMapping("/forgot-password/request")
+    public ResponseEntity<?> requestReset(@RequestBody Map<String, String> body) {
+        String usernameOrEmail = body.get("usernameOrEmail");
+        if (usernameOrEmail == null || usernameOrEmail.isBlank())
+            return ResponseEntity.badRequest().body("Username or email is required.");
+        try {
+            passwordResetService.requestReset(usernameOrEmail.trim());
+            return ResponseEntity.ok("Reset code sent to your registered email.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to send reset code. Please try again.");
+        }
+    }
+
+    @PostMapping("/forgot-password/verify")
+    public ResponseEntity<?> verifyCode(@RequestBody Map<String, String> body) {
+        String usernameOrEmail = body.get("usernameOrEmail");
+        String code = body.get("code");
+        if (usernameOrEmail == null || code == null)
+            return ResponseEntity.badRequest().body("Username/email and code are required.");
+        try {
+            String userId = passwordResetService.verifyCode(usernameOrEmail.trim(), code.trim());
+            return ResponseEntity.ok(Map.of("userId", userId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.GONE).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String userId = body.get("userId");
+        String newPassword = body.get("newPassword");
+        String confirmPassword = body.get("confirmPassword");
+        if (userId == null || newPassword == null || confirmPassword == null)
+            return ResponseEntity.badRequest().body("All fields are required.");
+        if (!newPassword.equals(confirmPassword))
+            return ResponseEntity.badRequest().body("Passwords do not match.");
+        try {
+            passwordResetService.resetPassword(userId, newPassword);
+            return ResponseEntity.ok("Password updated successfully.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }

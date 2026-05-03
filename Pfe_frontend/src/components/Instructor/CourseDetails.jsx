@@ -725,7 +725,6 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
                   </div>
                 </div>
               ))}
-            </div>
 
             {isEditing && (
               <button

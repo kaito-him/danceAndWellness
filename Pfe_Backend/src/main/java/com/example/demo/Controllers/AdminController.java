@@ -12,6 +12,7 @@ import com.example.demo.repositories.InstructorRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.services.AdminService;
 import com.example.demo.services.EmailService;
+import com.example.demo.services.NotificationService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -22,6 +23,7 @@ public class AdminController {
     @Autowired private EmailService         emailService;
     @Autowired private UserRepository        userRepository;
     @Autowired private InstructorRepository instructorRepository;
+    @Autowired private NotificationService  notificationService;
 
     // GET /api/admin/applications
     @GetMapping("/applications")
@@ -88,6 +90,14 @@ public class AdminController {
         return instructorRepository.findById(id).map(instructor -> {
             instructor.setFeatured(true);
             instructorRepository.save(instructor);
+            notificationService.create(
+                instructor.getUserId(),
+                "🌟 Congratulations! Our platform has chosen you to be one of the faces of Dance&Wellness. " +
+                "You are now featured on our home page — check it out!",
+                "FEATURED",
+                null,
+                false
+            );
             return ResponseEntity.ok("Instructor highlighted.");
         }).orElse(ResponseEntity.notFound().build());
     }
