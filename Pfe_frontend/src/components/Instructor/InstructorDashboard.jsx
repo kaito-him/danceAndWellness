@@ -15,7 +15,22 @@ import {
   FiRss,
   FiEdit3,
   FiArchive,
+  FiSlash,
 } from "react-icons/fi";
+
+/* ── Skeleton Card ───────────────────────────────────────────────── */
+const CourseCardSkeleton = ({ index }) => (
+  <div className="id-skeleton-card" style={{ animationDelay: `${index * 60}ms` }}>
+    <div className="id-skeleton-thumb" />
+    <div className="id-skeleton-body">
+      <div className="id-skeleton-line title" />
+      <div className="id-skeleton-line title-half" />
+      <div className="id-skeleton-line tags" />
+      <div className="id-skeleton-line meta" />
+      <div className="id-skeleton-btn" />
+    </div>
+  </div>
+);
 import AddCourseForm from "../Instructor/Addcourseform";
 import CourseCard from "../Instructor/CourseCard";
 import InstructorCoursePreview from "../Instructor/InstructorCoursePreview";
@@ -119,34 +134,61 @@ export default function InstructorDashboard() {
 
   const [draftCount, setDraftCount] = useState(0);
   const [archiveCount, setArchiveCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [enrollmentCounts, setEnrollmentCounts] = useState({});
 
   /* ── data fetching ─────────────────────────────────────────────── */
+  const fetchEnrollmentCounts = async (courseList) => {
+    const entries = await Promise.all(
+      courseList.map(async (c) => {
+        try {
+          const res = await api.get(`/courses/${c.courseId}/enrollments/count`);
+          return [c.courseId, res.data];
+        } catch {
+          return [c.courseId, 0];
+        }
+      })
+    );
+    setEnrollmentCounts(Object.fromEntries(entries));
+  };
+
   const fetchCourses = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/courses/my-published");
       setCourses(res.data);
+      fetchEnrollmentCounts(res.data);
     } catch (_) {
       showToast("error", "Failed to load courses.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchDrafts = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/courses/my-drafts");
       setCourses(res.data);
       setDraftCount(res.data.length);
     } catch (_) {
       showToast("error", "Failed to load drafts.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchArchived = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/courses/my-archived");
       setCourses(res.data);
       setArchiveCount(res.data.length);
+      fetchEnrollmentCounts(res.data);
     } catch (_) {
       showToast("error", "Failed to load archived courses.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -229,6 +271,46 @@ export default function InstructorDashboard() {
 
   const handlePublishDraft = async (courseId) => {
     try {
+      // Fetch the course data to validate before publishing
+      const courseRes = await api.get(`/courses/${courseId}`);
+      const course = courseRes.data;
+
+      // Validate quizzes are not empty
+      if (course.quizzes && course.quizzes.length > 0) {
+        for (let i = 0; i < course.quizzes.length; i++) {
+          const quiz = course.quizzes[i];
+          if (!quiz.title?.trim()) {
+            showToast("error", `Quiz ${i + 1} is missing a title.`);
+            return;
+          }
+          if (!quiz.questions || quiz.questions.length === 0) {
+            showToast("error", `Quiz "${quiz.title || i + 1}" has no questions.`);
+            return;
+          }
+          for (let j = 0; j < quiz.questions.length; j++) {
+            const q = quiz.questions[j];
+            if (!q.text?.trim()) {
+              showToast("error", `Quiz "${quiz.title}", question ${j + 1} has no text.`);
+              return;
+            }
+            if (!q.options || q.options.length < 2) {
+              showToast("error", `Quiz "${quiz.title}", question ${j + 1} needs at least 2 options.`);
+              return;
+            }
+            if (!q.options.some(o => o.isCorrect)) {
+              showToast("error", `Quiz "${quiz.title}", question ${j + 1} has no correct answer marked.`);
+              return;
+            }
+            for (let k = 0; k < q.options.length; k++) {
+              if (!q.options[k].text?.trim()) {
+                showToast("error", `Quiz "${quiz.title}", question ${j + 1}, option ${k + 1} is empty.`);
+                return;
+              }
+            }
+          }
+        }
+      }
+
       const res = await api.patch(`/courses/${courseId}/publish`);
       showToast("success", "Course published successfully!");
       refreshCounts();
@@ -352,7 +434,7 @@ export default function InstructorDashboard() {
               <h1 className="id-heading">Drafts</h1>
               <p className="id-subheading">Courses saved as drafts — edit, delete, or publish when ready</p>
             </div>
-            {courses.length > 0 && (
+            {!loading && courses.length > 0 && (
               <div className="id-stats">
                 <div className="id-stat">
                   <span className="id-stat-num">{courses.length}</span>
@@ -362,7 +444,11 @@ export default function InstructorDashboard() {
             )}
           </div>
 
-          {courses.length === 0 ? (
+          {loading ? (
+            <div className="id-grid">
+              {Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={i} index={i} />)}
+            </div>
+          ) : courses.length === 0 ? (
             <div className="id-empty">
               <div className="id-empty-icon"><FiBookOpen size={48} /></div>
               <h2 className="id-empty-title">No drafts</h2>
@@ -395,7 +481,7 @@ export default function InstructorDashboard() {
               <h1 className="id-heading">Archive</h1>
               <p className="id-subheading">Manage archived courses: unarchive or delete permanently</p>
             </div>
-            {courses.length > 0 && (
+            {!loading && courses.length > 0 && (
               <div className="id-stats">
                 <div className="id-stat">
                   <span className="id-stat-num">{courses.length}</span>
@@ -405,32 +491,83 @@ export default function InstructorDashboard() {
             )}
           </div>
 
-          {courses.length === 0 ? (
+          {loading ? (
+            <div className="id-grid">
+              {Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={i} index={i} />)}
+            </div>
+          ) : courses.length === 0 ? (
             <div className="id-empty">
               <div className="id-empty-icon"><FiArchive size={48} /></div>
               <h2 className="id-empty-title">No archived courses</h2>
-              <p className="id-empty-sub">Archived free courses will appear here.</p>
+              <p className="id-empty-sub">Courses you archive will appear here.</p>
             </div>
-          ) : (
-            <div className="id-grid">
-              {courses.map((course) => (
-                <CourseCard
-                  key={course.courseId}
-                  course={course}
-                  onDelete={(c) => setConfirmDeleteCourse(c)}
-                  onEdit={(c) => { setEditingCourse(c); setActiveTab("course-preview"); }}
-                  onPublish={() => setConfirmUnarchiveCourse(course)}
-                  publishLabel="Unarchive"
-                  deleteLabel="Delete Permanently"
-                />
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            const selfArchived  = courses.filter(c => !c.archivedByAdmin);
+            const adminArchived = courses.filter(c =>  c.archivedByAdmin);
+            return (
+              <>
+                {/* ── Self-archived ── */}
+                {selfArchived.length > 0 && (
+                  <div className="id-archive-section">
+                    <div className="id-archive-section-header">
+                      <FiArchive size={15} />
+                      <span>Archived by you</span>
+                      <span className="id-archive-section-count">{selfArchived.length}</span>
+                    </div>
+                    <div className="id-grid">
+                      {selfArchived.map((course) => (
+                        <CourseCard
+                          key={course.courseId}
+                          course={course}
+                          enrollmentCount={enrollmentCounts[course.courseId] || 0}
+                          onDelete={(c) => setConfirmDeleteCourse(c)}
+                          onEdit={(c) => { setEditingCourse(c); setActiveTab("course-preview"); }}
+                          onPublish={() => setConfirmUnarchiveCourse(course)}
+                          publishLabel="Unarchive"
+                          deleteLabel="Delete Permanently"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Admin-archived ── */}
+                {adminArchived.length > 0 && (
+                  <div className="id-archive-section id-archive-section--admin">
+                    <div className="id-archive-section-header">
+                      <FiSlash size={15} />
+                      <span>Archived by admin</span>
+                      <span className="id-archive-section-count">{adminArchived.length}</span>
+                    </div>
+                    <div className="id-archive-admin-notice">
+                      These courses were removed from the catalog by an administrator. Contact support if you believe this was a mistake.
+                    </div>
+                    <div className="id-grid">
+                      {adminArchived.map((course) => (
+                        <CourseCard
+                          key={course.courseId}
+                          course={course}
+                          enrollmentCount={enrollmentCounts[course.courseId] || 0}
+                          onDelete={null}
+                          onEdit={(c) => { setEditingCourse(c); setActiveTab("course-preview"); }}
+                          onPublish={null}
+                          deleteLabel="Delete Permanently"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </>
       );
     }
 
     /* ── My Courses (default) ───────────────────────────────────── */
+    const freeCourses = courses.filter(c => c.isFree);
+    const paidCourses = courses.filter(c => !c.isFree);
+
     return (
       <>
         <div className="id-header">
@@ -444,24 +581,76 @@ export default function InstructorDashboard() {
           </button>
         </div>
 
-        {courses.length === 0 ? (
+        {loading ? (
+          <div className="id-grid">
+            {Array.from({ length: 6 }).map((_, i) => <CourseCardSkeleton key={i} index={i} />)}
+          </div>
+        ) : courses.length === 0 ? (
           <div className="id-empty">
             <div className="id-empty-icon">🎓</div>
-            <h2 className="id-empty-title">No courses yet</h2>
-            <p className="id-empty-sub">Create your first course and submit it for review.</p>
+            {draftCount > 0 ? (
+              <>
+                <h2 className="id-empty-title">No published courses yet</h2>
+                <p className="id-empty-sub">
+                  You have {draftCount} draft{draftCount > 1 ? "s" : ""} waiting — go to{" "}
+                  <button
+                    className="id-empty-link"
+                    onClick={() => setActiveTab("drafts")}
+                  >
+                    Drafts
+                  </button>{" "}
+                  to publish them.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="id-empty-title">No courses yet</h2>
+                <p className="id-empty-sub">Create your first course and submit it for review.</p>
+              </>
+            )}
           </div>
         ) : (
-          <div className="id-grid">
-            {courses.map((course) => (
-              <CourseCard
-                key={course.courseId}
-                course={course}
-                onDelete={course.isFree ? (c) => setConfirmArchiveCourse(c) : null}
-                onEdit={(c) => { setEditingCourse(c); setActiveTab("course-preview"); }}
-                deleteLabel="Archive"
-              />
-            ))}
-          </div>
+          <>
+            {paidCourses.length > 0 && (
+              <>
+                <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#1a1a1a", marginBottom: "16px", marginTop: "8px" }}>
+                  Paid Courses ({paidCourses.length})
+                </h2>
+                <div className="id-grid">
+                  {paidCourses.map((course) => (
+                    <CourseCard
+                      key={course.courseId}
+                      course={course}
+                      enrollmentCount={enrollmentCounts[course.courseId] || 0}
+                      onDelete={(c) => setConfirmArchiveCourse(c)}
+                      onEdit={(c) => { setEditingCourse(c); setActiveTab("course-preview"); }}
+                      deleteLabel="Archive"
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {freeCourses.length > 0 && (
+              <>
+                <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#1a1a1a", marginBottom: "16px", marginTop: paidCourses.length > 0 ? "32px" : "8px" }}>
+                  Free Courses ({freeCourses.length})
+                </h2>
+                <div className="id-grid">
+                  {freeCourses.map((course) => (
+                    <CourseCard
+                      key={course.courseId}
+                      course={course}
+                      enrollmentCount={enrollmentCounts[course.courseId] || 0}
+                      onDelete={(c) => setConfirmArchiveCourse(c)}
+                      onEdit={(c) => { setEditingCourse(c); setActiveTab("course-preview"); }}
+                      deleteLabel="Archive"
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         )}
       </>
     );
@@ -626,7 +815,17 @@ export default function InstructorDashboard() {
           <div className="lm-card" onClick={(e) => e.stopPropagation()}>
             <h2 className="lm-title">Archive Course</h2>
             <p className="lm-message">
-              Archive "{confirmArchiveCourse.title}"? You can restore it later from the Archive section.
+              Archive <strong>"{confirmArchiveCourse.title}"</strong>?
+              {confirmArchiveCourse.isFree === false && (
+                <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#b89c4d' }}>
+                  This is a paid course. It can only be archived if it has no enrolled students.
+                </span>
+              )}
+              {(confirmArchiveCourse.isFree !== false) && (
+                <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#666' }}>
+                  You can restore it later from the Archive section.
+                </span>
+              )}
             </p>
             <div className="lm-actions">
               <button className="lm-btn-cancel" onClick={() => setConfirmArchiveCourse(null)}>Cancel</button>

@@ -10,3 +10,8 @@ Pfe_Backend/src/main/resources/application.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Python virtual environments
+recommendation_system/venv/
+recommendation_system/__pycache__/
+recommendation_system/*.pyc

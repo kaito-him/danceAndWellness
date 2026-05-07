@@ -145,7 +145,10 @@ const CoursesPage = () => {
   const filtered = useMemo(() => {
     let list = [...courses];
     if (filterCat !== "ALL") {
-      list = list.filter(c => c.category === filterCat);
+      list = list.filter(c => {
+        const cat = cats.find(cat => cat.id === c.categoryId);
+        return cat?.name === filterCat;
+      });
     }
     if (filterLevel !== "ALL") {
       list = list.filter(c => c.level === filterLevel);
@@ -158,7 +161,7 @@ const CoursesPage = () => {
       );
     }
     return list;
-  }, [courses, filterCat, filterLevel, filterUser]);
+  }, [courses, filterCat, filterLevel, filterUser, cats]);
 
   const handleSearch = () => {
     setLoading(true);
@@ -312,7 +315,9 @@ const CoursesPage = () => {
                 </div>
 
                 <div className="course-card-body">
-                  <p className="course-card-category">{course.category}</p>
+                  <p className="course-card-category">
+                    {cats.find(c => c.id === course.categoryId)?.name || ""}
+                  </p>
                   <h3 className="course-card-title">{course.title}</h3>
                   <div className="course-card-instructor">
                     <div className="course-card-avatar">

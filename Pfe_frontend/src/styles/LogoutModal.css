@@ -120,3 +120,24 @@
   transform: translateY(0);
   box-shadow: 0 2px 8px rgba(184,156,77,0.2);
 }
+
+.lm-btn-confirm:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner inside confirm button */
+.lm-btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: lm-spin 0.65s linear infinite;
+}
+
+@keyframes lm-spin {
+  to { transform: rotate(360deg); }
+}

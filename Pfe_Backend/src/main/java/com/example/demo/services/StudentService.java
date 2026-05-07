@@ -43,7 +43,8 @@ public class StudentService {
         return enrollmentRepository.findByStudentIdAndType(studentId, Enrollment.EnrollmentType.FREE)
                 .stream()
                 .map(enrollment -> courseRepository.findById(enrollment.getCourseId()).orElse(null))
-                .filter(course -> course != null)
+                .filter(course -> course != null && course.getStatus() == com.example.demo.entities.CourseStatus.PUBLISHED)
+                .map(this::enrichInstructorUsername)
                 .collect(Collectors.toList());
     }
 
@@ -51,8 +52,17 @@ public class StudentService {
         return enrollmentRepository.findByStudentIdAndType(studentId, Enrollment.EnrollmentType.PAID)
                 .stream()
                 .map(enrollment -> courseRepository.findById(enrollment.getCourseId()).orElse(null))
-                .filter(course -> course != null)
+                .filter(course -> course != null && course.getStatus() == com.example.demo.entities.CourseStatus.PUBLISHED)
+                .map(this::enrichInstructorUsername)
                 .collect(Collectors.toList());
+    }
+
+    private Course enrichInstructorUsername(Course course) {
+        if (course.getInstructor() != null && course.getInstructor().getUserId() != null) {
+            userRepository.findById(course.getInstructor().getUserId())
+                .ifPresent(u -> course.getInstructor().setUsername(u.getUsername()));
+        }
+        return course;
     }
 
     public java.util.Map<String, Object> getStudentStats(String userId) {
@@ -123,7 +133,8 @@ public class StudentService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .accountStatus(user.getStatus())
-                .photo(student.getPhoto())
+                // Prefer Student.photo; fall back to User.photo for existing accounts
+                .photo(student.getPhoto() != null ? student.getPhoto() : user.getPhoto())
                 .createdAt(user.getCreatedAt())
                 .lastLoginDate(user.getLastLoginDate())
                 .build();

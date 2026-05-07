@@ -65,6 +65,7 @@ export default function AddCourseForm({ onClose, onSuccess, instructor }) {
   const [catsLoading, setCatsLoading]       = useState(true);
   const [stripeStatus, setStripeStatus]     = useState(null); // null | {chargesEnabled, hasAccount}
   const [stripeLoading, setStripeLoading]   = useState(false);
+  const [showStripeHint, setShowStripeHint] = useState(false);
 
   const thumbInputRef  = useRef(null);
   const videoInputRefs = useRef({});
@@ -559,18 +560,42 @@ export default function AddCourseForm({ onClose, onSuccess, instructor }) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                 Free
               </button>
-              <span title={(!stripeStatus || !stripeStatus.chargesEnabled) ? "You must activate a stripe account first" : ""}>
+              <div style={{ position: "relative", display: "inline-block" }}
+                onMouseEnter={() => (!stripeStatus || !stripeStatus.chargesEnabled) && setShowStripeHint(true)}
+                onMouseLeave={() => setShowStripeHint(false)}
+              >
                 <button
                   type="button"
                   className={`acf-pricing-tab ${!form.isFree ? "active" : ""}`}
                   disabled={!stripeStatus || !stripeStatus.chargesEnabled}
                   onClick={() => handleField("isFree", false)}
-                  style={(!stripeStatus || !stripeStatus.chargesEnabled) ? { pointerEvents: "none" } : {}}
+                  style={(!stripeStatus || !stripeStatus.chargesEnabled) ? { pointerEvents: "none", opacity: 0.5 } : {}}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                   Paid
                 </button>
-              </span>
+                {showStripeHint && (
+                  <div style={{
+                    position: "absolute",
+                    bottom: "calc(100% + 8px)",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    background: "#fff5f5",
+                    border: "1px solid #feb2b2",
+                    color: "#c0392b",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    padding: "7px 12px",
+                    borderRadius: "8px",
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    zIndex: 10,
+                    pointerEvents: "none",
+                  }}>
+                    ⚠ You must activate your Stripe account first
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Combined Info Banner */}

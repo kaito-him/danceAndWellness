@@ -105,7 +105,7 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
 
       {/* ── Header Actions ── */}
       <div className="aid-header-actions">
-        <button className="aid-back-btn" onClick={onBack} style={{ marginBottom: 0 }}>
+        <button className="aid-back-btn" onClick={onBack}>
           <FiArrowLeft size={15} />
           Back to Instructors
         </button>
@@ -120,11 +120,13 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
           </button>
           {menuOpen && (
             <div className="ai-card-dropdown aid-dropdown">
-              <button className="ai-card-dropdown-item"
-                      onClick={(e) => handleMenuAction(e, onHighlight)}>
-                <FiStar size={13} />
-                {instructor.featured ? "Remove Highlight" : "Highlight Instructor"}
-              </button>
+              {instructor.accountStatus === 'ACTIVE' && (
+                <button className="ai-card-dropdown-item"
+                        onClick={(e) => handleMenuAction(e, onHighlight)}>
+                  <FiStar size={13} />
+                  {instructor.featured ? "Remove Highlight" : "Highlight Instructor"}
+                </button>
+              )}
               {instructor.accountStatus === 'INACTIVE' ? (
                 <button className="ai-card-dropdown-item" 
                         onClick={(e) => handleMenuAction(e, onUnban)}

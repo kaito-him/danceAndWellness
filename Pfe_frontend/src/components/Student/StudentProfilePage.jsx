@@ -39,6 +39,7 @@ const S = {
     fontFamily: T.font,
     color: T.text,
     boxSizing: "border-box",
+    minHeight: "100%",
   },
   card: {
     background: T.surface,

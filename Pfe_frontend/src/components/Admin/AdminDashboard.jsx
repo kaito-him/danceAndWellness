@@ -87,6 +87,7 @@ const AdminPublishedCourses = ({ onArchive, onPreview }) => {
   const [courseToArchive, setCourseToArchive] = useState(null);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveMessage, setArchiveMessage] = useState("");
+  const [showArchiveError, setShowArchiveError] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -162,13 +163,14 @@ const AdminPublishedCourses = ({ onArchive, onPreview }) => {
   const confirmArchive = async () => {
     if (!courseToArchive) return;
     if (!archiveMessage.trim()) {
-      alert("Please provide a reason for archiving this course.");
+      setShowArchiveError(true);
       return;
     }
     await onArchive(courseToArchive.courseId, archiveMessage);
     setShowArchiveModal(false);
     setCourseToArchive(null);
     setArchiveMessage("");
+    setShowArchiveError(false);
     fetchData();
   };
 
@@ -257,7 +259,7 @@ const AdminPublishedCourses = ({ onArchive, onPreview }) => {
           <div className="cat-modal confirm" onClick={(e) => e.stopPropagation()}>
             <div className="cat-modal-header">
               <h2>Archive Course</h2>
-              <button className="cat-modal-close" onClick={() => setShowArchiveModal(false)}>
+              <button className="cat-modal-close" onClick={() => { setShowArchiveModal(false); setShowArchiveError(false); }}>
                 <FiX size={18} />
               </button>
             </div>
@@ -274,12 +276,30 @@ const AdminPublishedCourses = ({ onArchive, onPreview }) => {
                   style={{ width: '100%', minHeight: '100px', padding: '12px', fontSize: '14px', borderRadius: '12px', border: '1.5px solid var(--sd-border)', background: 'var(--sd-surface2)', outline: 'none', resize: 'vertical' }}
                   placeholder="Explain to the instructor why this course is being archived..."
                   value={archiveMessage}
-                  onChange={(e) => setArchiveMessage(e.target.value)}
+                  onChange={(e) => { setArchiveMessage(e.target.value); setShowArchiveError(false); }}
                 />
               </div>
             </div>
             <div className="cat-modal-footer">
-              <button className="cat-btn-cancel" onClick={() => setShowArchiveModal(false)}>
+              {showArchiveError && (
+                <div style={{ 
+                  width: '100%', 
+                  padding: '10px 14px', 
+                  marginBottom: '12px', 
+                  background: 'rgba(192, 57, 43, 0.1)', 
+                  border: '1px solid rgba(192, 57, 43, 0.3)', 
+                  borderRadius: '8px', 
+                  color: '#c0392b', 
+                  fontSize: '13px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px' 
+                }}>
+                  <FiAlertCircle size={16} />
+                  <span>Please provide a reason for archiving this course.</span>
+                </div>
+              )}
+              <button className="cat-btn-cancel" onClick={() => { setShowArchiveModal(false); setShowArchiveError(false); }}>
                 Cancel
               </button>
               <button
@@ -609,9 +629,11 @@ export default function AdminDashboard() {
     fetchMe();
   }, []);
 
-  // Reset preview when switching sections
+  // Reset preview only when switching away from course-preview
   useEffect(() => {
-    setPreviewCourseId(null);
+    if (activeSection !== "course-preview") {
+      setPreviewCourseId(null);
+    }
   }, [activeSection]);
 
   // Sync activeSection FROM URL (handles navigation from children and sidebar)
@@ -683,6 +705,16 @@ export default function AdminDashboard() {
     window.location.href = "/login";
   };
 
+  // Single helper — always keeps URL and state in sync
+  const openCoursePreview = (courseId, returnTo = null, returnId = null) => {
+    setPreviewCourseId(courseId);
+    setActiveSection("course-preview");
+    const params = { section: "course-preview", courseId };
+    if (returnTo) params.returnTo = returnTo;
+    if (returnId) params.returnId = returnId;
+    setSearchParams(params);
+  };
+
   const renderContent = () => {
     // Handle course-preview section
     if (activeSection === "course-preview" && previewCourseId) {
@@ -692,7 +724,7 @@ export default function AdminDashboard() {
           onBack={() => {
             const returnTo = searchParams.get("returnTo");
             const returnId = searchParams.get("returnId");
-            if (returnTo && returnId) {
+            if (returnTo && VALID_SECTIONS.has(returnTo)) {
               setPreviewCourseId(null);
               setActiveSection(returnTo);
               const params = { section: returnTo };
@@ -706,33 +738,6 @@ export default function AdminDashboard() {
             }
           }}
           onStudentProfile={(id) => {
-            setPreviewCourseId(null);
-            setSearchParams({ section: "students", studentId: id, fromCourseId: previewCourseId });
-          }}
-        />
-      );
-    }
-    
-    if (previewCourseId) {
-      return (
-        <AdminCoursePreview
-          courseId={previewCourseId}
-          onBack={() => {
-            const returnTo = searchParams.get("returnTo");
-            const returnId = searchParams.get("returnId");
-            if (returnTo && returnId) {
-              setPreviewCourseId(null);
-              setActiveSection(returnTo);
-              const params = { section: returnTo };
-              if (returnTo === "students") params.studentId = returnId;
-              if (returnTo === "instructors") params.instructorId = returnId;
-              setSearchParams(params);
-            } else {
-              setPreviewCourseId(null);
-            }
-          }}
-          onStudentProfile={(id) => {
-            setPreviewCourseId(null);
             setSearchParams({ section: "students", studentId: id, fromCourseId: previewCourseId });
           }}
         />
@@ -749,16 +754,7 @@ export default function AdminDashboard() {
     if (activeSection === "instructors") {
       return (
         <AdminInstructors 
-          onCourseClick={(courseId, instructorId) => {
-            setPreviewCourseId(courseId);
-            setActiveSection("course-preview");
-            setSearchParams({ 
-              section: "course-preview", 
-              courseId, 
-              returnTo: "instructors", 
-              returnId: instructorId 
-            });
-          }}
+          onCourseClick={(courseId, instructorId) => openCoursePreview(courseId, "instructors", instructorId)}
         />
       );
     }
@@ -767,16 +763,7 @@ export default function AdminDashboard() {
     if (activeSection === "students") {
       return (
         <AdminStudents 
-          onCourseClick={(courseId, studentId) => {
-            setPreviewCourseId(courseId);
-            setActiveSection("course-preview");
-            setSearchParams({ 
-              section: "course-preview", 
-              courseId, 
-              returnTo: "students", 
-              returnId: studentId 
-            });
-          }}
+          onCourseClick={(courseId, studentId) => openCoursePreview(courseId, "students", studentId)}
         />
       );
     }
@@ -789,7 +776,7 @@ export default function AdminDashboard() {
       return (
         <AdminArchivedCourses 
           onUnarchive={handleUnarchiveByAdmin} 
-          onPreview={(id) => setPreviewCourseId(id)}
+          onPreview={(id) => openCoursePreview(id, "archived")}
         />
       );
     }
@@ -799,7 +786,7 @@ export default function AdminDashboard() {
       return (
         <AdminPublishedCourses
           onArchive={handleArchive}
-          onPreview={(id) => setPreviewCourseId(id)}
+          onPreview={(id) => openCoursePreview(id, "feed")}
         />
       );
     }
@@ -846,9 +833,7 @@ export default function AdminDashboard() {
               if (n.type === "NEW_INSTRUCTOR_APPLICATION") {
                 handleSectionChange("applications");
               } else if (n.courseId) {
-                setPreviewCourseId(n.courseId);
-                setActiveSection("course-preview");
-                setSearchParams({ section: "course-preview", courseId: n.courseId });
+                openCoursePreview(n.courseId);
               }
             }}
           />

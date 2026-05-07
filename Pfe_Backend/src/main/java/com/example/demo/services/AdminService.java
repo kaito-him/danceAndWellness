@@ -127,6 +127,14 @@ public class AdminService {
         
         user.setStatus(AccountStatus.INACTIVE);
         userRepository.save(user);
+
+        // Auto-unhighlight if this user is a featured instructor
+        instructorRepository.findByUserId(userId).ifPresent(instructor -> {
+            if (instructor.isFeatured()) {
+                instructor.setFeatured(false);
+                instructorRepository.save(instructor);
+            }
+        });
         
         try {
             emailService.sendAccountBannedEmail(user.getEmail(), user.getUsername());

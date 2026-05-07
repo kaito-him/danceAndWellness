@@ -4,11 +4,12 @@ import { useNavigate, Link } from "react-router-dom";
 import {
   FiArrowLeft, FiLayers, FiClock, FiHelpCircle,
   FiCheckCircle, FiTrash2, FiPlay, FiChevronRight, FiShield, FiCheck, FiBookmark,
-  FiTrendingUp, FiUserCheck
+  FiTrendingUp, FiUserCheck, FiAward, FiLock, FiUsers,
 } from "react-icons/fi";
 import "../../styles/Courses.css";
-import { FiMessageCircle } from "react-icons/fi"; // already have react-icons
+import { FiMessageCircle } from "react-icons/fi";
 import CourseComments from "./CourseComments";
+import QuizModal from "./QuizModal";
 
 
 /* ── REUSABLE ACTION MODAL (Logout Style) ── */
@@ -49,16 +50,23 @@ export default function EmbeddedCoursePage({ courseId, onBack, onBrowseLessons }
   const [cancelling, setCancelling] = useState(false);
   const [modalType, setModalType] = useState(null); // 'enroll' or 'cancel'
   const [categoryName, setCategoryName] = useState("");
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [courseProgress, setCourseProgress] = useState(0);
   const [completedLessonsCount, setCompletedLessonsCount] = useState(0);
+  const [quizAttempts, setQuizAttempts] = useState({}); // quizId → attempt
+  const [activeQuiz, setActiveQuiz] = useState(null);   // quiz object being taken/reviewed
 
   useEffect(() => {
     setLoading(true);
     const init = async () => {
       try {
-        const courseRes = await api.get(`/courses/${courseId}`);
+        const [courseRes, countRes] = await Promise.all([
+          api.get(`/courses/${courseId}`),
+          api.get(`/courses/${courseId}/enrollments/count`),
+        ]);
         setCourse(courseRes.data);
+        setEnrollmentCount(countRes.data || 0);
 
         // Set category name from categoryId
         const courseData = courseRes.data;
@@ -97,6 +105,14 @@ export default function EmbeddedCoursePage({ courseId, onBack, onBrowseLessons }
         setCompletedLessonsCount(res.data.completedLessons ?? 0);
       })
       .catch(() => { });
+  }, [enrolled, studentId, courseId]);
+
+  /* ── Fetch quiz attempts when enrolled ── */
+  useEffect(() => {
+    if (!enrolled || !studentId || !courseId) return;
+    api.get("/quizzes/attempts", { params: { courseId } })
+      .then(res => setQuizAttempts(res.data || {}))
+      .catch(() => {});
   }, [enrolled, studentId, courseId]);
 
   const handleFreeEnroll = async () => {
@@ -250,6 +266,14 @@ export default function EmbeddedCoursePage({ courseId, onBack, onBrowseLessons }
                 <span className="ebp-meta-value">{categoryName}</span>
               </div>
             </div>
+
+            <div className="ebp-meta-item">
+              <div className="ebp-meta-icon"><FiUsers size={18} /></div>
+              <div className="ebp-meta-info">
+                <span className="ebp-meta-label">Enrolled</span>
+                <span className="ebp-meta-value">{enrollmentCount} Student{enrollmentCount !== 1 ? "s" : ""}</span>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -311,6 +335,86 @@ export default function EmbeddedCoursePage({ courseId, onBack, onBrowseLessons }
               <p className="ebp-course-progress-sub">
                 {completedLessonsCount} of {lessons.length} lessons completed
               </p>
+            </div>
+          )}
+
+          {/* ── Quizzes Section ── */}
+          {quizzes.length > 0 && (
+            <div style={{ marginTop: 32 }}>
+              <h3 className="ebp-section-title" style={{ marginBottom: 16 }}>
+                <FiHelpCircle size={18} style={{ marginRight: 8, color: "#b89c4d", verticalAlign: "middle" }} />
+                Course Quizzes
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {quizzes.map((quiz) => {
+                  const attempt = quizAttempts[quiz.quizId];
+                  const taken = !!attempt;
+                  const scoreColor = taken
+                    ? attempt.score >= 80 ? "#22783c"
+                    : attempt.score >= 50 ? "#b89c4d"
+                    : "#c0392b"
+                    : "#b89c4d";
+
+                  return (
+                    <div key={quiz.quizId} style={{
+                      display: "flex", alignItems: "center", gap: 16,
+                      padding: "16px 20px", borderRadius: 14,
+                      background: taken ? "#fafaf8" : "#fff",
+                      border: taken ? "1.5px solid #e8e4d8" : "1.5px solid #e8e4d8",
+                      boxShadow: "0 1px 4px rgba(28,26,20,0.05)",
+                    }}>
+                      {/* Icon */}
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: taken ? `${scoreColor}15` : "rgba(184,156,77,0.1)",
+                        border: `1.5px solid ${taken ? scoreColor : "rgba(184,156,77,0.25)"}`,
+                      }}>
+                        {taken
+                          ? <FiAward size={18} style={{ color: scoreColor }} />
+                          : <FiHelpCircle size={18} style={{ color: "#b89c4d" }} />
+                        }
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1a1a",
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {quiz.title}
+                        </p>
+                        <p style={{ margin: "3px 0 0", fontSize: 12, color: "#888" }}>
+                          {quiz.questions?.length || 0} question{(quiz.questions?.length || 0) !== 1 ? "s" : ""}
+                          {taken && ` · Score: `}
+                          {taken && <span style={{ color: scoreColor, fontWeight: 700 }}>{attempt.score}%</span>}
+                          {taken && ` (${attempt.correctCount}/${attempt.totalQuestions} correct)`}
+                        </p>
+                      </div>
+
+                      {/* Action button */}
+                      {!enrolled ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6,
+                          fontSize: 12, color: "#aaa", flexShrink: 0 }}>
+                          <FiLock size={13} /> Enroll to access
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setActiveQuiz(quiz)}
+                          style={{
+                            padding: "8px 18px", borderRadius: 9, border: "none",
+                            background: taken ? "transparent" : "#b89c4d",
+                            color: taken ? "#b89c4d" : "#fff",
+                            border: taken ? "1.5px solid #b89c4d" : "none",
+                            fontSize: 13, fontFamily: "inherit", fontWeight: 600,
+                            cursor: "pointer", flexShrink: 0,
+                            boxShadow: taken ? "none" : "0 2px 8px rgba(184,156,77,0.3)",
+                          }}>
+                          {taken ? "Review" : "Take Quiz"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -392,6 +496,19 @@ export default function EmbeddedCoursePage({ courseId, onBack, onBrowseLessons }
         <CourseComments
           courseId={courseId}
           onClose={() => setShowComments(false)}
+        />
+      )}
+
+      {/* ── Quiz Modal ── */}
+      {activeQuiz && (
+        <QuizModal
+          quiz={activeQuiz}
+          courseId={courseId}
+          attempt={quizAttempts[activeQuiz.quizId] || null}
+          onClose={() => setActiveQuiz(null)}
+          onSubmitted={(attempt) => {
+            setQuizAttempts(prev => ({ ...prev, [activeQuiz.quizId]: attempt }));
+          }}
         />
       )}
 

@@ -15,6 +15,7 @@ public class AdminTransactionRow {
     private String studentName;
     private String studentId;
     private String courseTitle;
+    private String courseId;
     private String instructorName;
     private String instructorId;
     private long totalAmountCents;

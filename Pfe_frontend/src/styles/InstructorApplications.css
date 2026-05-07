@@ -384,6 +384,25 @@
   opacity: 0.85;
 }
 
+.ia-confirm-yes:disabled,
+.ia-confirm-no:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* inline spinner inside confirm button */
+.ia-action-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ia-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
 .ia-confirm-no {
   flex: 1;
   padding: 9px 0;
@@ -456,7 +475,7 @@
 /* ── TOAST ───────────────────────────────────────────────────────────────── */
 .ia-toast {
   position: fixed;
-  bottom: 28px;
+  top: 28px;
   right: 28px;
   padding: 14px 22px;
   border-radius: 8px;
@@ -478,7 +497,7 @@
 @keyframes ia-toast-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-10px);
   }
 
   to {

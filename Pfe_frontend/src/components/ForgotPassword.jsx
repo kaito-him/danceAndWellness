@@ -179,7 +179,7 @@ export default function ForgotPassword({ onClose }) {
                 <label>Username or Email</label>
                 <input
                   type="text"
-                  placeholder="e.g. john_doe or john@example.com"
+                  placeholder="e.g. raslen or raslen@gmail.com"
                   value={usernameOrEmail}
                   onChange={(e) => { setUsernameOrEmail(e.target.value); setError(""); }}
                   autoFocus

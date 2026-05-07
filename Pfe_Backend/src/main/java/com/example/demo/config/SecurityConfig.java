@@ -120,6 +120,9 @@ public class SecurityConfig {
                 // ── Badges ───────────────────────────────────────────────
                 .requestMatchers("/api/badges/**").authenticated()
 
+                // ── Quizzes ───────────────────────────────────────────────
+                .requestMatchers("/api/quizzes/**").authenticated()
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

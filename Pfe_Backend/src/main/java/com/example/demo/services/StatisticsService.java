@@ -120,7 +120,9 @@ public class StatisticsService {
                 // ── Courses ───────────────────────────────────────────────────────
                 List<Course> allCourses = courseRepository.findAll();
                 long newCourses = allCourses.stream()
-                                .filter(c -> c.getCreatedAt() != null && today.equals(c.getCreatedAt().toLocalDate()))
+                                .filter(c -> c.getCreatedAt() != null
+                                                && today.equals(c.getCreatedAt().toLocalDate())
+                                                && CourseStatus.PUBLISHED.equals(c.getStatus()))
                                 .count();
 
                 // ── Enrollments ───────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 export default function InstructorApplicationCard({ application, onApprove, onDecline }) {
   const [confirmAction, setConfirmAction] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const {
     userId, username, email, bio,
@@ -25,9 +26,11 @@ export default function InstructorApplicationCard({ application, onApprove, onDe
     });
   };
 
-  const handleConfirm = () => {
-    if (confirmAction === "approve") onApprove(userId);
-    else onDecline(userId);
+  const handleConfirm = async () => {
+    setActionLoading(true);
+    if (confirmAction === "approve") await onApprove(userId);
+    else await onDecline(userId);
+    setActionLoading(false);
     setConfirmAction(null);
   };
 
@@ -111,10 +114,15 @@ export default function InstructorApplicationCard({ application, onApprove, onDe
             <button
               className={`ia-confirm-yes ${confirmAction}`}
               onClick={handleConfirm}
+              disabled={actionLoading}
             >
-              Yes, {confirmAction === "approve" ? "Approve" : "Decline"}
+              {actionLoading ? (
+                <span className="ia-action-spinner" />
+              ) : (
+                <>Yes, {confirmAction === "approve" ? "Approve" : "Decline"}</>
+              )}
             </button>
-            <button className="ia-confirm-no" onClick={() => setConfirmAction(null)}>
+            <button className="ia-confirm-no" onClick={() => setConfirmAction(null)} disabled={actionLoading}>
               Cancel
             </button>
           </div>

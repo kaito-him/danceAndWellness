@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FiArrowLeft, FiUser, FiMail, FiMessageSquare, FiBookOpen } from "react-icons/fi";
 import api from "../services/api";
 import ChatModal from "../Student/ChatModal";
-import "../../styles/AdminStudentDetail.css";
+import "../../styles/InstructorStudentProfile.css";
 import "../../styles/Messages.css";
 
 export default function InstructorStudentProfile({ studentUserId, instructor, onBack, onCourseSelect, backLabel = "Back to Course" }) {
@@ -23,14 +23,18 @@ export default function InstructorStudentProfile({ studentUserId, instructor, on
         setStudent(studentRes.data);
         setUser(userRes.data);
 
-        // Show only courses this student is enrolled in that belong to current instructor
-        const coursesRes = await api.get(`/students/${studentRes.data.id}/courses`);
+        // Fetch all courses this student is enrolled in, then filter by this instructor
+        // Enrollments store userId as studentId, so use userId not student._id
+        const coursesRes = await api.get(`/students/${studentRes.data.userId}/courses`);
         const allCourses = Array.isArray(coursesRes.data) ? coursesRes.data : [];
-        const mine = allCourses.filter(
-          (c) => c?.instructor?.userId && c.instructor.userId === instructor?.userId
-        );
+        const mine = allCourses.filter((c) => {
+          if (!c?.instructor) return false;
+          const courseInstructorUserId = c.instructor.userId ?? c.instructor.id;
+          return courseInstructorUserId === instructor?.userId;
+        });
         setCourses(mine);
-      } catch {
+      } catch (err) {
+        console.error("Failed to load student profile:", err);
         setStudent(null);
         setCourses([]);
       } finally {
@@ -40,80 +44,116 @@ export default function InstructorStudentProfile({ studentUserId, instructor, on
     if (studentUserId && instructor?.userId) load();
   }, [studentUserId, instructor]);
 
-  if (loading) return <div className="asd-wrap"><div className="asd-card">Loading student profile...</div></div>;
-  if (!student || !user) return <div className="asd-wrap"><div className="asd-card">Student profile not found.</div></div>;
+  if (loading) {
+    return (
+      <div className="isp-wrap">
+        <div className="isp-card" style={{ color: "#888", textAlign: "center", padding: "48px" }}>
+          Loading student profile...
+        </div>
+      </div>
+    );
+  }
 
-  const photoUrl = student.photo ? `http://localhost:8080/api/files/${student.photo}` : null;
+  if (!student || !user) {
+    return (
+      <div className="isp-wrap">
+        <div className="isp-card" style={{ color: "#888", textAlign: "center", padding: "48px" }}>
+          Student profile not found.
+        </div>
+      </div>
+    );
+  }
+
+  // Prefer student.photo, fall back to user.photo (both are GridFS file IDs)
+  const photoFileId = student.photo || user.photo || null;
+  const photoUrl = photoFileId ? `http://localhost:8080/api/files/${photoFileId}` : null;
 
   return (
-    <div className="asd-wrap">
-      <div className="asd-header">
-        <button className="asd-back" onClick={onBack}><FiArrowLeft size={14} /> {backLabel}</button>
-      </div>
-      <div className="asd-card">
-        <div className="asd-profile">
+    <div className="isp-wrap">
+      <button className="isp-back" onClick={onBack}>
+        <FiArrowLeft size={14} /> {backLabel}
+      </button>
+
+      <div className="isp-card">
+        {/* ── Profile header ── */}
+        <div className="isp-profile">
           {photoUrl ? (
-            <img src={photoUrl} alt={user.username} className="asd-avatar" />
-          ) : (
-            <div className="asd-avatar asd-avatar-fallback">{user.username?.charAt(0)?.toUpperCase() || "S"}</div>
-          )}
-          <div className="asd-user-main">
+            <img
+              src={photoUrl}
+              alt={user.username}
+              className="isp-avatar"
+              onError={(e) => {
+                // If image fails to load, swap to fallback
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextSibling.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div
+            className="isp-avatar-fallback"
+            style={{ display: photoUrl ? "none" : "flex" }}
+          >
+            {user.username?.charAt(0)?.toUpperCase() || "S"}
+          </div>
+          <div className="isp-user-main">
             <h2>{user.username}</h2>
             <p>Student Profile</p>
           </div>
         </div>
-        <div className="asd-info-grid">
-          <div className="asd-info-card"><FiUser size={15} /><span>Username: {user.username}</span></div>
-          <div className="asd-info-card"><FiMail size={15} /><span>Email: {user.email}</span></div>
-          <button
-            className="asd-info-card"
-            style={{ cursor: "pointer", justifyContent: "flex-start" }}
-            onClick={() => setChatOpen(true)}
-          >
+
+        {/* ── Info grid ── */}
+        <div className="isp-info-grid">
+          <div className="isp-info-card">
+            <FiUser size={15} />
+            <span>{user.username}</span>
+          </div>
+          <div className="isp-info-card">
+            <FiMail size={15} />
+            <span>{user.email}</span>
+          </div>
+          <button className="isp-info-card" onClick={() => setChatOpen(true)}>
             <FiMessageSquare size={15} />
             <span>Message {user.username}</span>
           </button>
         </div>
 
-        <div className="asd-courses-section" style={{ marginTop: 20 }}>
-          <div className="asd-section-title">
+        {/* ── Enrolled courses ── */}
+        <div className="isp-courses-section">
+          <div className="isp-section-title">
             <FiBookOpen size={16} />
             <h3>Enrolled In Your Courses</h3>
           </div>
+
           {courses.length === 0 ? (
-            <p style={{ color: "#777", marginTop: 8 }}>This student is not enrolled in any of your courses yet.</p>
+            <p className="isp-empty">
+              This student is not enrolled in any of your courses yet.
+            </p>
           ) : (
-            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            <div className="isp-courses-list">
               {courses.map((c) => (
                 <button
                   key={c.courseId}
+                  className="isp-course-btn"
                   onClick={() => onCourseSelect?.(c.courseId)}
-                  style={{
-                    textAlign: "left",
-                    border: "1px solid #eadfc8",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    background: "#fffdf8",
-                    cursor: "pointer"
-                  }}
                 >
                   <strong>{c.title}</strong>
-                  <div style={{ fontSize: 12, color: "#777", marginTop: 4 }}>
+                  <span className="isp-course-meta">
                     {c.level} · {c.isFree ? "Free" : `$${c.price}`}
-                  </div>
+                  </span>
                 </button>
               ))}
             </div>
           )}
         </div>
       </div>
+
       {chatOpen && (
         <ChatModal
           instructor={{
             userId: studentUserId,
             username: user.username,
             specialization: "Student",
-            photo: student.photo || "",
+            photo: photoFileId || "",
           }}
           onClose={() => setChatOpen(false)}
         />

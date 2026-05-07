@@ -103,7 +103,7 @@ public class CourseService {
     }
 
     public List<Course> getPublishedCoursesByInstructor(Instructor instructor) {
-        return courseRepository.findByInstructorAndStatus(instructor, CourseStatus.PUBLISHED);
+        return courseRepository.findByInstructor_IdAndStatus(instructor.getId(), CourseStatus.PUBLISHED);
     }
 
     public Course getCourseDetail(String courseId) {
@@ -116,11 +116,17 @@ public class CourseService {
     }
 
     public List<Course> getDraftCoursesByInstructor(Instructor instructor) {
-        return courseRepository.findByInstructorAndStatus(instructor, CourseStatus.DRAFT);
+        System.out.println(">>> Querying drafts with instructor.id: " + instructor.getId());
+        List<Course> drafts = courseRepository.findByInstructor_IdAndStatus(instructor.getId(), CourseStatus.DRAFT);
+        System.out.println(">>> Query returned " + drafts.size() + " drafts");
+        if (!drafts.isEmpty()) {
+            System.out.println(">>> First draft instructor.id: " + drafts.get(0).getInstructor().getId());
+        }
+        return drafts;
     }
 
     public List<Course> getArchivedCoursesByInstructor(Instructor instructor) {
-        return courseRepository.findByInstructorAndStatus(instructor, CourseStatus.ARCHIVED);
+        return courseRepository.findByInstructor_IdAndStatus(instructor.getId(), CourseStatus.ARCHIVED);
     }
 
     // ── Create ────────────────────────────────────────────────────
@@ -209,8 +215,15 @@ public class CourseService {
             throw new IllegalArgumentException("Only published courses can be archived.");
         }
 
+        // Paid courses can only be archived if no one is enrolled
         if (!Boolean.TRUE.equals(existing.getIsFree())) {
-            throw new IllegalStateException("Paid courses cannot be archived.");
+            long enrollmentCount = enrollmentRepository.countByCourseId(courseId);
+            if (enrollmentCount > 0) {
+                throw new IllegalStateException(
+                    "Paid courses with active enrollments cannot be archived. " +
+                    "This course has " + enrollmentCount + " enrolled student(s)."
+                );
+            }
         }
 
         existing.setStatus(CourseStatus.ARCHIVED);

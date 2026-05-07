@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import api from "../services/api";
-import { FiArrowLeft, FiClock, FiLayers, FiArrowRight, FiCheckCircle, FiPlay } from "react-icons/fi";
+import { FiArrowLeft, FiClock, FiArrowRight, FiCheckCircle, FiPlay } from "react-icons/fi";
 import "../../styles/Lesson.css";
 
 /* ════════════════════════════════════════════════════════════
@@ -23,6 +23,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
   const videoRef = useRef(null);
   const tickRef  = useRef(null);
   const sseRef   = useRef(null);
+  const maxWatchedRef  = useRef(0);
 
   const studentId = localStorage.getItem("userId");
 
@@ -30,9 +31,8 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
   const [loading,   setLoading]   = useState(true);
 
   /* Backend-driven progress state */
-  const [courseProgress, setCourseProgress]   = useState(0);     // overall %
-  const [completedCount, setCompletedCount]   = useState(0);
-  const [lessonProgress, setLessonProgress]   = useState({});    // { lessonId: { percent, completed } }
+  const [courseProgress, setCourseProgress]   = useState(0);
+  const [lessonProgress, setLessonProgress]   = useState({});
 
   /* ── Fetch course data ── */
   useEffect(() => {
@@ -52,7 +52,6 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
       .then(res => {
         const d = res.data;
         setCourseProgress(d.courseCompletionPercent ?? 0);
-        setCompletedCount(d.completedLessons ?? 0);
       })
       .catch(() => {});
 
@@ -65,6 +64,10 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
             percent: Math.round(lp.completionPercent ?? lp.lessonCompletionPercent ?? 0),
             completed: lp.completed ?? false,
           };
+          // Seed maxWatchedRef with the previously saved position for this lesson
+          if (String(lp.lessonId) === String(lessonId) && lp.watchedSeconds) {
+            maxWatchedRef.current = lp.watchedSeconds;
+          }
         });
         setLessonProgress(map);
       })
@@ -83,10 +86,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
     es.addEventListener("progress", (e) => {
       try {
         const data = JSON.parse(e.data);
-        // Update course-level
         setCourseProgress(data.courseCompletionPercent ?? 0);
-        setCompletedCount(data.completedLessons ?? 0);
-        // Update the specific lesson
         if (data.lessonId) {
           setLessonProgress(prev => ({
             ...prev,
@@ -112,11 +112,17 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
     const video = videoRef.current;
     if (!video || video.paused || !studentId) return;
 
+    const currentTime = Math.floor(video.currentTime);
+    // Update max watched position (only moves forward, never backward)
+    if (currentTime > maxWatchedRef.current) {
+      maxWatchedRef.current = currentTime;
+    }
+
     api.post("/progress/update", {
       studentId,
       courseId,
       lessonId,
-      watchedSeconds: Math.floor(video.currentTime),
+      watchedSeconds: maxWatchedRef.current, // Send the farthest point reached
       totalSeconds:   Math.floor(video.duration || 0),
     }).catch(() => {});
   }, [studentId, courseId, lessonId]);
@@ -136,19 +142,43 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
     sendTick(); // one final tick when pausing
   }, [sendTick]);
 
-  /* Clean up interval on unmount or lesson change */
-  useEffect(() => {
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
-  }, [lessonId]);
-
   /* ── Derived ── */
   const lessons      = course?.lessons ?? [];
   const currentIndex = lessons.findIndex(l => String(l.lessonId) === String(lessonId));
   const current      = lessons[currentIndex];
   const prev         = lessons[currentIndex - 1];
   const next         = lessons[currentIndex + 1];
+
+  /* Clean up on lesson change */
+  useEffect(() => {
+    // Reset maxWatchedRef, but it will be updated from backend progress
+    maxWatchedRef.current = 0;
+    
+    // Fetch the saved progress for this specific lesson
+    if (studentId && courseId && lessonId) {
+      api.get("/progress/lessons", { params: { studentId, courseId } })
+        .then(res => {
+          const lessonData = (res.data || []).find(lp => String(lp.lessonId) === String(lessonId));
+          if (lessonData && lessonData.watchedSeconds) {
+            maxWatchedRef.current = lessonData.watchedSeconds;
+          }
+        })
+        .catch(() => {});
+    }
+    
+    // Update video source when lesson changes
+    const video = videoRef.current;
+    if (video && current?.mediaUrl) {
+      const newSrc = `http://localhost:8080${current.mediaUrl}`;
+      if (video.src !== newSrc) {
+        video.src = newSrc;
+        video.load();
+      }
+    }
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, [lessonId, current?.mediaUrl, studentId, courseId]);
 
   const currentLessonProg   = lessonProgress[current?.lessonId] || { percent: 0, completed: false };
   const isCurrentCompleted  = currentLessonProg.completed;
@@ -158,6 +188,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
     const video = videoRef.current;
     if (video && studentId) {
       const totalSec = Math.floor(video.duration || 0);
+      maxWatchedRef.current = totalSec; // force full progress
       api.post("/progress/update", {
         studentId, courseId,
         lessonId: current.lessonId,
@@ -180,7 +211,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
       {/* ── Breadcrumb bar ── */}
       <div className="emb-breadcrumb">
@@ -202,35 +233,76 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
       </div>
 
       {/* ── Player + Playlist ── */}
-      <div className="lp-body" style={{ minHeight: "calc(100vh - 130px)" }}>
+      <div className="lp-body">
 
         {/* ══ LEFT: Player ══ */}
         <div className="lp-player-col">
           <div className="lp-video-box">
             {current.mediaUrl ? (
-              <video
-                ref={videoRef}
-                key={current.lessonId}
-                className="lp-video"
-                controls
-                src={`http://localhost:8080${current.mediaUrl}`}
-                onPlay={startTicking}
-                onPause={stopTicking}
-                onEnded={() => {
-                  stopTicking();
-                  // Send final tick with full duration
-                  if (studentId) {
+              <>
+                <video
+                  ref={videoRef}
+                  className="lp-video"
+                  controls
+                  controlsList="nodownload"
+                  src={`http://localhost:8080${current.mediaUrl}`}
+                  onLoadedMetadata={() => {
                     const video = videoRef.current;
-                    const totalSec = Math.floor(video?.duration || 0);
+                    if (!video) return;
+                    
+                    // Only restore position if there's meaningful saved progress
+                    const lp = lessonProgress[current.lessonId];
+                    if (lp && lp.percent > 0 && lp.percent < 90 && maxWatchedRef.current > 0) {
+                      const saved = maxWatchedRef.current;
+                      if (saved > 0 && saved < video.duration) {
+                        video.currentTime = saved;
+                      }
+                    }
+                  }}
+                  onPlay={startTicking}
+                  onPause={stopTicking}
+                  onTimeUpdate={() => {
+                    const video = videoRef.current;
+                    if (!video) return;
+                    const t = Math.floor(video.currentTime);
+                    if (t > maxWatchedRef.current) maxWatchedRef.current = t;
+                  }}
+                  onSeeked={() => {
+                    const video = videoRef.current;
+                    if (!video) return;
+                    
+                    const t = Math.floor(video.currentTime);
+                    
+                    // Always update maxWatchedRef to the furthest point reached
+                    if (t > maxWatchedRef.current) {
+                      maxWatchedRef.current = t;
+                    }
+                    
+                    if (!studentId) return;
                     api.post("/progress/update", {
-                      studentId, courseId,
+                      studentId,
+                      courseId,
                       lessonId: current.lessonId,
-                      watchedSeconds: totalSec,
-                      totalSeconds: totalSec,
+                      watchedSeconds: maxWatchedRef.current,
+                      totalSeconds: Math.floor(video.duration || 0),
                     }).catch(() => {});
-                  }
-                }}
-              />
+                  }}
+                  onEnded={() => {
+                    stopTicking();
+                    if (studentId) {
+                      const video = videoRef.current;
+                      const totalSec = Math.floor(video?.duration || 0);
+                      maxWatchedRef.current = totalSec;
+                      api.post("/progress/update", {
+                        studentId, courseId,
+                        lessonId: current.lessonId,
+                        watchedSeconds: totalSec,
+                        totalSeconds: totalSec,
+                      }).catch(() => {});
+                    }
+                  }}
+                />
+              </>
             ) : (
               <div className="lp-no-media">
                 <svg width="54" height="54" viewBox="0 0 24 24" fill="none"
@@ -244,9 +316,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
 
           {/* Lesson info */}
           <div className="lp-info">
-            <p className="lp-video-index">
-              Video #{String(currentIndex + 1).padStart(2, "0")} of {lessons.length}
-            </p>
+        
             <h2 className="lp-video-title">{current.title}</h2>
 
             <div className="lp-meta">
@@ -255,9 +325,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
                   <FiClock size={12} /> {formatMin(current.duration)}
                 </span>
               )}
-              <span className="lp-chip">
-                <FiLayers size={12} /> Chapter 1
-              </span>
+      
               {isCurrentCompleted && (
                 <span className="lp-chip done">
                   <FiCheckCircle size={12} /> Completed
@@ -267,8 +335,7 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
                 <span className="lp-chip">
                   {currentLessonProg.percent}% watched
                 </span>
-              )}
-            </div>
+              )}            </div>
 
             <div className="lp-nav-btns">
               <button
@@ -321,10 +388,9 @@ export default function EmbeddedLessonPlayerPage({ courseId, lessonId, onBack, o
                         </svg>
                       </div>
                     )}
-                    <span className="lp-pl-chapter-badge">Ch.1</span>
                     <div className="lp-pl-thumb-overlay">
                       <div className="lp-pl-play-icon">
-                        <FiPlay size={8} fill={isActive ? "#b89c4d" : "#555"} />
+                        <FiPlay size={10} fill={isActive ? "#b89c4d" : "#fff"} />
                       </div>
                     </div>
                   </div>

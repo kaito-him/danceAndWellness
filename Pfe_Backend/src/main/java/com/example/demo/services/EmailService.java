@@ -3,6 +3,7 @@ package com.example.demo.services;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,11 @@ public class EmailService {
         helper.setTo(toEmail);
         helper.setSubject("🎉 Welcome to Dance&Wellness – You're Approved!");
         helper.setText(htmlContent, true);
+        
+        // Attach logo as inline image
+        ClassPathResource logo = new ClassPathResource("static/images/Dicone.png");
+        helper.addInline("logo", logo);
+        
         mailSender.send(message);
     }
     
@@ -60,6 +66,11 @@ public class EmailService {
         helper.setTo(toEmail);
         helper.setSubject("Dance&Wellness – Update on Your Instructor Application");
         helper.setText(htmlContent, true);
+        
+        // Attach logo as inline image
+        ClassPathResource logo = new ClassPathResource("static/images/Dicone.png");
+        helper.addInline("logo", logo);
+        
         mailSender.send(message);
     }
     

@@ -1,0 +1,223 @@
+/* InstructorStudentProfile.css */
+
+.isp-wrap {
+  padding: 32px 40px;
+  max-width: 100%;
+  animation: ispFadeUp 0.35s ease-out both;
+}
+
+@keyframes ispFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Back button ─────────────────────────────────────────────────── */
+.isp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.isp-back:hover {
+  color: #c9a84c;
+  transform: translateX(-3px);
+}
+
+/* ── Card ────────────────────────────────────────────────────────── */
+.isp-card {
+  background: #fff;
+  border: 1.5px solid #ede8dc;
+  border-radius: 24px;
+  padding: 48px 52px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+}
+
+/* ── Profile header ──────────────────────────────────────────────── */
+.isp-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0ebe0;
+}
+
+.isp-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.isp-avatar-fallback {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5e9c8 0%, #c9a84c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.isp-user-main h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 6px;
+}
+
+.isp-user-main p {
+  font-size: 1rem;
+  color: #888;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ── Info grid ───────────────────────────────────────────────────── */
+.isp-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.isp-info-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #faf8f3;
+  border: 1px solid #ede8dc;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 500;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: default;
+  text-align: left;
+  width: 100%;
+}
+
+.isp-info-card svg {
+  color: #c9a84c;
+  flex-shrink: 0;
+}
+
+button.isp-info-card {
+  cursor: pointer;
+  background: none;
+  border: 1px solid #ede8dc;
+  background: #faf8f3;
+}
+
+button.isp-info-card:hover {
+  border-color: #c9a84c;
+  background: #fffdf6;
+}
+
+/* ── Courses section ─────────────────────────────────────────────── */
+.isp-courses-section {
+  margin-top: 4px;
+}
+
+.isp-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.isp-section-title svg {
+  color: #c9a84c;
+}
+
+.isp-section-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.isp-empty {
+  color: #999;
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+
+/* ── Course list ─────────────────────────────────────────────────── */
+.isp-courses-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.isp-course-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1.5px solid #ede8dc;
+  border-radius: 14px;
+  padding: 16px 20px;
+  background: #fffdf8;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.isp-course-btn:hover {
+  border-color: #c9a84c;
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.12);
+  transform: translateY(-1px);
+}
+
+.isp-course-btn strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 5px;
+}
+
+.isp-course-meta {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .isp-wrap {
+    padding: 16px;
+  }
+
+  .isp-card {
+    padding: 24px 20px;
+  }
+
+  .isp-profile {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .isp-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

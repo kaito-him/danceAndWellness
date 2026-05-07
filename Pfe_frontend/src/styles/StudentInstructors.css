@@ -5,6 +5,8 @@
 .sd-main .si-page {
   padding: 2.5rem 3rem;
   max-width: 1300px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   animation: si-fadeUp 0.4s ease both;
 }

@@ -176,6 +176,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
+  align-items: stretch; /* Ensure all grid items stretch to same height */
+}
+
+/* Ensure all course cards in the grid have the same height */
+.courses-grid .course-card {
+  height: 380px !important;
+  max-height: 380px !important;
+  min-height: 380px !important;
 }
 
 /* ── COURSE CARD ── */
@@ -187,6 +195,11 @@
   cursor: pointer;
   transition: var(--c-transition);
   animation: fadeUp 0.6s ease-out both;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 380px !important; /* Fixed height for consistent alignment */
+  max-height: 380px !important; /* Prevent expansion */
+  min-height: 380px !important; /* Ensure minimum height */
 }
 
 .course-card:hover {
@@ -200,6 +213,7 @@
   position: relative;
   background-color: #eee;
   overflow: hidden;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .course-card-thumb img {
@@ -263,6 +277,11 @@
 
 .course-card-body {
   padding: 16px 18px 20px;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important; /* Take remaining space */
+  justify-content: space-between !important; /* Distribute content evenly */
+  overflow: hidden !important; /* Prevent content overflow */
 }
 
 .course-card-category {
@@ -272,20 +291,41 @@
   letter-spacing: 1.2px;
   color: var(--c-gold);
   margin-bottom: 6px;
+  height: 12px; /* Fixed height for consistency */
 }
 
 .course-card-title {
   font-family: var(--f-serif);
   font-size: 1.1rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.3 !important;
   margin-bottom: 12px;
   color: #111;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  height: 2.6rem;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  height: 2.6rem !important; /* Fixed height for 2 lines */
+  max-height: 2.6rem !important; /* Prevent expansion */
+  word-wrap: break-word !important;
+}
+
+/* Fallback for browsers that don't support line-clamp */
+.course-card-title {
+  max-height: 2.6rem !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.course-card-title::after {
+  content: "...";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--c-surface);
+  padding-left: 20px;
+  background: linear-gradient(to right, transparent, var(--c-surface) 50%);
 }
 
 .course-card-instructor {
@@ -293,6 +333,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
+  height: 28px; /* Fixed height for consistency */
 }
 
 .course-card-avatar {
@@ -322,6 +363,8 @@
   padding-top: 12px;
   border-top: 1px solid var(--c-border);
   margin-bottom: 16px;
+  height: 32px; /* Fixed height for consistency */
+  align-items: center; /* Center align the stats */
 }
 
 .course-card-stats span {
@@ -351,6 +394,8 @@
   font-size: 13px;
   font-weight: 600;
   transition: var(--c-transition);
+  height: 40px; /* Fixed height for consistency */
+  margin-top: auto; /* Push to bottom */
 }
 
 .course-card:hover .course-card-cta {
@@ -366,6 +411,9 @@
   overflow: hidden;
   border: 1px solid var(--c-border);
   position: relative;
+  height: 380px; /* Match the fixed card height */
+  display: flex;
+  flex-direction: column;
 }
 
 .course-card-skeleton::after {
@@ -384,10 +432,15 @@
 .skeleton-thumb {
   height: 160px;
   background: #f2f2f2;
+  flex-shrink: 0;
 }
 
 .skeleton-body {
   padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
 }
 
 .skeleton-line {
@@ -555,6 +608,26 @@
 
   .courses-grid {
     gap: 20px;
+  }
+  
+  /* Adjust card height for mobile */
+  .course-card,
+  .course-card-skeleton,
+  .courses-grid .course-card {
+    height: 360px !important;
+    max-height: 360px !important;
+    min-height: 360px !important;
+  }
+  
+  .course-card-thumb,
+  .skeleton-thumb {
+    height: 140px !important;
+  }
+  
+  .course-card-title {
+    font-size: 1rem !important;
+    height: 2.4rem !important;
+    max-height: 2.4rem !important;
   }
 }
 

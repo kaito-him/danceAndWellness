@@ -124,6 +124,7 @@ export default function AdminStudents({ onCourseClick }) {
   const [toast, setToast]           = useState(null);
   const [banCandidate, setBanCandidate] = useState(null);
   const [unbanCandidate, setUnbanCandidate] = useState(null);
+  const [banLoading, setBanLoading] = useState(false);
 
   const showToast = (type, msg) => {
     setToast({ type, msg });
@@ -206,6 +207,7 @@ export default function AdminStudents({ onCourseClick }) {
 
   const handleBan = async () => {
     if (!banCandidate) return;
+    setBanLoading(true);
     try {
       await api.patch(`/admin/users/${banCandidate.userId}/ban`);
       showToast("success", `"${banCandidate.username}" account suspended.`);
@@ -213,11 +215,14 @@ export default function AdminStudents({ onCourseClick }) {
       load();
     } catch {
       showToast("error", "Failed to suspend account.");
+    } finally {
+      setBanLoading(false);
     }
   };
 
   const handleUnban = async () => {
     if (!unbanCandidate) return;
+    setBanLoading(true);
     try {
       await api.patch(`/admin/users/${unbanCandidate.userId}/unban`);
       showToast("success", `"${unbanCandidate.username}" account reinstated.`);
@@ -225,6 +230,8 @@ export default function AdminStudents({ onCourseClick }) {
       load();
     } catch {
       showToast("error", "Failed to reinstate account.");
+    } finally {
+      setBanLoading(false);
     }
   };
 
@@ -340,9 +347,10 @@ export default function AdminStudents({ onCourseClick }) {
               <button 
                 className="lm-btn-confirm" 
                 onClick={handleBan}
+                disabled={banLoading}
                 style={{ background: "#e53e3e", boxShadow: "0 4px 14px rgba(229, 62, 62, 0.25)" }}
               >
-                Yes, Ban Account
+                {banLoading ? <span className="lm-btn-spinner" /> : "Yes, Ban Account"}
               </button>
             </div>
           </div>
@@ -371,9 +379,10 @@ export default function AdminStudents({ onCourseClick }) {
               <button 
                 className="lm-btn-confirm" 
                 onClick={handleUnban}
+                disabled={banLoading}
                 style={{ background: "#22783c", boxShadow: "0 4px 14px rgba(34, 120, 60, 0.25)", borderColor: "#22783c" }}
               >
-                Yes, Unban Account
+                {banLoading ? <span className="lm-btn-spinner" /> : "Yes, Unban Account"}
               </button>
             </div>
           </div>

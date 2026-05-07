@@ -60,10 +60,14 @@ public class ProgressService {
         int watched = req.getWatchedSeconds();
         int total   = req.getTotalSeconds() > 0 ? req.getTotalSeconds() : 1; // guard /0
 
-        double lessonPct = Math.min((watched * 100.0) / total, 100.0);
+        // Never reduce watchedSeconds — only advance forward
+        int prevWatched = lp.getWatchedSeconds() != null ? lp.getWatchedSeconds() : 0;
+        int effectiveWatched = Math.max(watched, prevWatched);
+
+        double lessonPct = Math.min((effectiveWatched * 100.0) / total, 100.0);
         boolean done     = lessonPct >= 90.0; // mark complete at 90 %
 
-        lp.setWatchedSeconds(watched);
+        lp.setWatchedSeconds(effectiveWatched);
         lp.setTotalSeconds(total);
         lp.setCompletionPercent(lessonPct);
         lp.setCompleted(done);

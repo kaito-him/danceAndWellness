@@ -39,8 +39,12 @@ public class CourseController {
     public ResponseEntity<List<Course>> getMyPublishedCourses() {
         try {
             Instructor instructor = resolveInstructor();
-            return ResponseEntity.ok(courseService.getPublishedCoursesByInstructor(instructor));
+            System.out.println(">>> Fetching published courses for instructor ID: " + instructor.getId() + ", userId: " + instructor.getUserId());
+            List<Course> courses = courseService.getPublishedCoursesByInstructor(instructor);
+            System.out.println(">>> Found " + courses.size() + " published courses");
+            return ResponseEntity.ok(courses);
         } catch (IllegalArgumentException e) {
+            System.err.println(">>> Error fetching published courses: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
@@ -65,8 +69,12 @@ public class CourseController {
     public ResponseEntity<List<Course>> getMyDraftCourses() {
         try {
             Instructor instructor = resolveInstructor();
-            return ResponseEntity.ok(courseService.getDraftCoursesByInstructor(instructor));
+            System.out.println(">>> Fetching drafts for instructor ID: " + instructor.getId() + ", userId: " + instructor.getUserId());
+            List<Course> drafts = courseService.getDraftCoursesByInstructor(instructor);
+            System.out.println(">>> Found " + drafts.size() + " draft courses");
+            return ResponseEntity.ok(drafts);
         } catch (IllegalArgumentException e) {
+            System.err.println(">>> Error fetching drafts: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }

@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.entities.User;
+import com.example.demo.repositories.StudentRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.security.JwtUtil;
 
@@ -17,6 +18,7 @@ import com.example.demo.security.JwtUtil;
 public class UserController {
 
     @Autowired private UserRepository userRepository;
+    @Autowired private StudentRepository studentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private JwtUtil jwtUtil;
 
@@ -129,6 +131,14 @@ public class UserController {
         user.setPhoto(photoId);
         userRepository.save(user);
 
+        // Sync photo to Student document if the user is a student
+        if ("STUDENT".equalsIgnoreCase(user.getRole())) {
+            studentRepository.findByUserId(user.getUserId()).ifPresent(student -> {
+                student.setPhoto(photoId);
+                studentRepository.save(student);
+            });
+        }
+
         return ResponseEntity.ok(Map.of(
             "message", "Photo updated.",
             "photo", photoId
@@ -143,6 +153,14 @@ public class UserController {
 
         user.setPhoto(null);
         userRepository.save(user);
+
+        // Sync photo removal to Student document if the user is a student
+        if ("STUDENT".equalsIgnoreCase(user.getRole())) {
+            studentRepository.findByUserId(user.getUserId()).ifPresent(student -> {
+                student.setPhoto(null);
+                studentRepository.save(student);
+            });
+        }
 
         return ResponseEntity.ok(Map.of("message", "Photo removed."));
     }

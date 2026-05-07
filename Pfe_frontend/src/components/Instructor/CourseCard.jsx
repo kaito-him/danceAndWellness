@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../../styles/Coursecard.css";
-import { FiMoreVertical, FiArchive, FiRefreshCw, FiTrash2, FiEdit3 } from "react-icons/fi";
+import { FiMoreVertical, FiArchive, FiRefreshCw, FiTrash2, FiEdit3, FiUsers } from "react-icons/fi";
 
 const STATUS_LABELS = {
   DRAFT: { label: "Draft", className: "status-pending" },
@@ -10,6 +10,7 @@ const STATUS_LABELS = {
 
 export default function CourseCard({
   course,
+  enrollmentCount = 0,
   onDelete,
   onEdit,
   onPublish,
@@ -117,7 +118,12 @@ export default function CourseCard({
         </div>
 
         <p className="course-card-meta">
-          {course.lessons?.length ?? 0} lesson{course.lessons?.length !== 1 ? "s" : ""}
+          <span>{course.lessons?.length ?? 0} lesson{course.lessons?.length !== 1 ? "s" : ""}</span>
+          <span className="course-card-meta-sep">·</span>
+          <span className="course-card-enrollment">
+            <FiUsers size={12} />
+            {enrollmentCount} student{enrollmentCount !== 1 ? "s" : ""}
+          </span>
         </p>
       </div>
 

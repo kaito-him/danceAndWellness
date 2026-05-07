@@ -71,11 +71,13 @@ function InstructorCard({ instructor, onSelect, onHighlight, onBan, onUnban }) {
         {menuOpen && (
           <div className="ai-card-dropdown">
 
-            <button className="ai-card-dropdown-item"
-                    onClick={(e) => handleMenuAction(e, onHighlight)}>
-            <FiStar size={13} />
-            {instructor.featured ? "Remove Highlight" : "Highlight Instructor"}
-            </button>
+            {instructor.accountStatus === 'ACTIVE' && (
+              <button className="ai-card-dropdown-item"
+                      onClick={(e) => handleMenuAction(e, onHighlight)}>
+                <FiStar size={13} />
+                {instructor.featured ? "Remove Highlight" : "Highlight Instructor"}
+              </button>
+            )}
             {instructor.accountStatus === 'INACTIVE' ? (
               <button className="ai-card-dropdown-item" 
                       onClick={(e) => handleMenuAction(e, onUnban)}
@@ -145,6 +147,7 @@ export default function AdminInstructors({ onCourseClick }) {
   // Modal State
   const [banCandidate, setBanCandidate]   = useState(null);
   const [unbanCandidate, setUnbanCandidate] = useState(null);
+  const [banLoading, setBanLoading]       = useState(false);
 
   const showToast = (type, msg) => {
     setToast({ type, msg });
@@ -241,6 +244,7 @@ export default function AdminInstructors({ onCourseClick }) {
 
   const handleBan = async () => {
     if (!banCandidate) return;
+    setBanLoading(true);
     try {
       await api.patch(`/admin/users/${banCandidate.userId}/ban`);
       showToast("success", `"${banCandidate.username}" account suspended.`);
@@ -248,11 +252,14 @@ export default function AdminInstructors({ onCourseClick }) {
       load(); // refresh the list
     } catch {
       showToast("error", "Failed to suspend account.");
+    } finally {
+      setBanLoading(false);
     }
   };
 
   const handleUnban = async () => {
     if (!unbanCandidate) return;
+    setBanLoading(true);
     try {
       await api.patch(`/admin/users/${unbanCandidate.userId}/unban`);
       showToast("success", `"${unbanCandidate.username}" account reinstated.`);
@@ -260,6 +267,8 @@ export default function AdminInstructors({ onCourseClick }) {
       load();
     } catch {
       showToast("error", "Failed to reinstate account.");
+    } finally {
+      setBanLoading(false);
     }
   };
 
@@ -392,9 +401,10 @@ export default function AdminInstructors({ onCourseClick }) {
               <button 
                 className="lm-btn-confirm" 
                 onClick={handleBan}
+                disabled={banLoading}
                 style={{ background: "#e53e3e", boxShadow: "0 4px 14px rgba(229, 62, 62, 0.25)" }}
               >
-                Yes, Ban Account
+                {banLoading ? <span className="lm-btn-spinner" /> : "Yes, Ban Account"}
               </button>
             </div>
           </div>
@@ -423,9 +433,10 @@ export default function AdminInstructors({ onCourseClick }) {
               <button 
                 className="lm-btn-confirm" 
                 onClick={handleUnban}
+                disabled={banLoading}
                 style={{ background: "#22783c", boxShadow: "0 4px 14px rgba(34, 120, 60, 0.25)", borderColor: "#22783c" }}
               >
-                Yes, Unban Account
+                {banLoading ? <span className="lm-btn-spinner" /> : "Yes, Unban Account"}
               </button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import com.example.demo.repositories.UserRepository;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.services.InstructorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,6 +63,12 @@ public class InstructorController {
 
         Instructor instructor = instructorService.getInstructorById(id).orElse(null);
         if (instructor == null) return ResponseEntity.notFound().build();
+        
+        // Safeguard: ensure userId is present
+        if (instructor.getUserId() == null || instructor.getUserId().isBlank()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Instructor data is corrupted (missing userId)"));
+        }
 
         instructor.setPhoto(photoId);
 
@@ -77,6 +84,12 @@ public class InstructorController {
     public ResponseEntity<?> removePhoto(@PathVariable String id) {
         Instructor instructor = instructorService.getInstructorById(id).orElse(null);
         if (instructor == null) return ResponseEntity.notFound().build();
+        
+        // Safeguard: ensure userId is present
+        if (instructor.getUserId() == null || instructor.getUserId().isBlank()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Instructor data is corrupted (missing userId)"));
+        }
 
         instructor.setPhoto(null);
 

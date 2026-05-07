@@ -3,6 +3,14 @@
   animation: ad-fadeUp 0.35s ease both;
 }
 
+/* ── Header Actions row (back + options) ── */
+.aid-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
 /* ── Back ── */
 .aid-back-btn {
   display: inline-flex;
@@ -16,7 +24,6 @@
   font-weight: 600;
   color: var(--ad-text-sub);
   cursor: pointer;
-  margin-bottom: 28px;
   transition: var(--ad-transition);
   font-family: var(--ad-font-body);
 }

@@ -7,8 +7,9 @@
 .id-main .msg-layout {
   display: flex;
   height: calc(100vh - var(--sd-topnav-h, 64px));
+  max-height: calc(100vh - var(--sd-topnav-h, 64px));
   overflow: hidden;
-  background: var(--sd-bg, #f7f5f0);
+  background: transparent;
   margin: 0;
   padding: 0;
 }

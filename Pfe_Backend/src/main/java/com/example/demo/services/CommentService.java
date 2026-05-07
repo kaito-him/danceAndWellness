@@ -64,12 +64,30 @@ public class CommentService {
 
     private String resolveAuthorPhoto(User user) {
         if ("STUDENT".equalsIgnoreCase(user.getRole())) {
-            return studentRepository.findByUserId(user.getUserId()).map(Student::getPhoto).orElse(null);
+            // Prefer Student.photo; fall back to User.photo for existing accounts
+            String studentPhoto = studentRepository.findByUserId(user.getUserId())
+                    .map(Student::getPhoto).orElse(null);
+            return studentPhoto != null ? studentPhoto : user.getPhoto();
         }
         if ("INSTRUCTOR".equalsIgnoreCase(user.getRole())) {
             return instructorRepository.findByUserId(user.getUserId()).map(Instructor::getPhoto).orElse(null);
         }
-        return null;
+        return user.getPhoto();
+    }
+
+    /**
+     * Enriches a comment's authorPhoto on-the-fly so that existing comments
+     * (saved before the user had a photo) always show the current photo.
+     */
+    private Comment enrichPhoto(Comment comment) {
+        if (comment.getAuthorId() == null) return comment;
+        userRepository.findById(comment.getAuthorId()).ifPresent(user -> {
+            String photo = resolveAuthorPhoto(user);
+            if (photo != null && !photo.equals(comment.getAuthorPhoto())) {
+                comment.setAuthorPhoto(photo);
+            }
+        });
+        return comment;
     }
 
     // ── Public API ────────────────────────────────────────────────────────
@@ -79,13 +97,15 @@ public class CommentService {
         Course course = requireCourse(courseId);
         User user = currentUser();
         validateInstructorCanInteract(course, user);
-        return commentRepository.findByCourseIdAndParentCommentIdIsNull(courseId);
+        return commentRepository.findByCourseIdAndParentCommentIdIsNull(courseId)
+                .stream().map(this::enrichPhoto).collect(java.util.stream.Collectors.toList());
     }
 
     /** Fetch direct replies to a given comment */
     public List<Comment> getReplies(String parentCommentId) {
         requireComment(parentCommentId);
-        return commentRepository.findByParentCommentId(parentCommentId);
+        return commentRepository.findByParentCommentId(parentCommentId)
+                .stream().map(this::enrichPhoto).collect(java.util.stream.Collectors.toList());
     }
 
     /** Add a top-level comment on a course (any authenticated user) */

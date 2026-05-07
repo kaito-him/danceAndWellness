@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import api from "./../services/api";
 import { FiEdit2, FiMail, FiMapPin, FiGlobe, FiLinkedin, FiAward, FiBookOpen, FiUser } from "react-icons/fi";
 import "../../styles/InstructorProfile.css";
@@ -479,11 +480,32 @@ export default function InstructorProfile() {
         </form>
       )}
 
-      {/* ── Toast (top-right) ── */}
-      {toast && (
-        <div className={`ip-toast ${toast.type}`}>
-          {toast.type === "success" ? "✓" : "✕"} {toast.msg}
-        </div>
+      {/* ── Toast — rendered via portal to escape any transform context ── */}
+      {toast && createPortal(
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '24px',
+          padding: '6px 12px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          lineHeight: '1.4',
+          fontFamily: 'Inter, sans-serif',
+          zIndex: 99999,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          whiteSpace: 'nowrap',
+          width: 'fit-content',
+          height: 'fit-content',
+          ...(toast.type === 'success'
+            ? { background: '#f0faf4', border: '1px solid #a8dfc0', color: '#1e8449' }
+            : { background: '#fdf3f2', border: '1px solid #f0b8b2', color: '#c0392b' }),
+        }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+        </div>,
+        document.body
       )}
 
     </div>

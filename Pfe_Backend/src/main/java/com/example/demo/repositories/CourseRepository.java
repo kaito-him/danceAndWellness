@@ -15,6 +15,9 @@ public interface CourseRepository extends MongoRepository<Course, String> {
     List<Course> findByStatus(CourseStatus status);
     List<Course> findByInstructorAndStatus(Instructor instructor, CourseStatus status);
     List<Course> findByInstructor_Id(String instructorId);
+    List<Course> findByInstructor_IdAndStatus(String instructorId, CourseStatus status);
+    List<Course> findByInstructor_UserId(String userId);
+    List<Course> findByInstructor_UserIdAndStatus(String userId, CourseStatus status);
     Optional<Course> findByCourseId(String courseId);
     List<Course> findByArchivedByAdmin(Boolean archivedByAdmin);
 }

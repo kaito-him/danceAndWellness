@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import {
   FiArrowLeft, FiLayers, FiClock, FiHelpCircle, FiPlay, FiUsers, FiBarChart2,
-  FiEdit3, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiMessageCircle
+  FiEdit3, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiMessageCircle,
+  FiCheckCircle, FiXCircle, FiAward
 } from "react-icons/fi";
 import CourseDetails from "./CourseDetails";
 import CourseComments from "../Student/CourseComments";
@@ -31,10 +32,17 @@ export default function InstructorCoursePreview({
   const [categoryName, setCategoryName] = useState("");
   const [enrollmentCount, setEnrollmentCount] = useState(0);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [analyticsTab, setAnalyticsTab] = useState("enrollments"); // "enrollments" | "quizzes"
   const [rows, setRows] = useState([]);
   const [activeLesson, setActiveLesson] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showComments, setShowComments] = useState(false);
+
+  // Quiz analytics state
+  const [quizAttempts, setQuizAttempts] = useState([]);
+  const [quizAttemptsLoading, setQuizAttemptsLoading] = useState(false);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [expandedAttempt, setExpandedAttempt] = useState(null);
 
   useEffect(() => {
     if (openCommentsOnLoadToken) {
@@ -77,6 +85,17 @@ export default function InstructorCoursePreview({
       .then((res) => setRows(Array.isArray(res.data) ? res.data : []))
       .catch(() => setRows([]));
   }, [analyticsOpen, instructorId]);
+
+  useEffect(() => {
+    if (!analyticsOpen || analyticsTab !== "quizzes") return;
+    setQuizAttemptsLoading(true);
+    api.get("/quizzes/instructor/attempts", { params: { courseId } })
+      .then((res) => {
+        setQuizAttempts(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => setQuizAttempts([]))
+      .finally(() => setQuizAttemptsLoading(false));
+  }, [analyticsOpen, analyticsTab, courseId]);
 
   const courseRows = useMemo(
     () => rows.filter((r) => r.courseId === courseId),
@@ -279,33 +298,169 @@ export default function InstructorCoursePreview({
               </section>
             ) : (
               <section className="aprev-section">
-                <h3 className="aprev-section-title">All Enrollments</h3>
-                {courseRows.length === 0 ? (
-                  <p className="aprev-description">No enrollments for this course yet.</p>
-                ) : (
-                  <div className="ip-table-wrap">
-                    <table className="ip-table">
-                      <thead>
-                        <tr><th>Student</th><th>Date Enrolled</th><th>Progress</th></tr>
-                      </thead>
-                      <tbody>
-                        {courseRows.map((r) => (
-                          <tr key={r.enrollmentId}>
-                            <td>{r.studentName || "—"}</td>
-                            <td>{fmtDate(r.enrolledAt)}</td>
-                            <td>
-                              <button
-                                className="aprev-progress-btn"
-                                onClick={() => openProgress(r)}
-                              >
-                                Show Progress
-                              </button>
-                            </td>
-                          </tr>
+                {/* ── Analytics tabs ── */}
+                <div className="cd-tabs" style={{ marginBottom: 16 }}>
+                  <button
+                    className={`cd-tab ${analyticsTab === "enrollments" ? "active" : ""}`}
+                    onClick={() => setAnalyticsTab("enrollments")}
+                  >
+                    <FiUsers size={13} style={{ marginRight: 5 }} />Enrollments
+                    <span className="cd-tab-badge">{courseRows.length}</span>
+                  </button>
+                  <button
+                    className={`cd-tab ${analyticsTab === "quizzes" ? "active" : ""}`}
+                    onClick={() => setAnalyticsTab("quizzes")}
+                  >
+                    <FiHelpCircle size={13} style={{ marginRight: 5 }} />Quiz Results
+                    <span className="cd-tab-badge">{quizAttempts.length}</span>
+                  </button>
+                </div>
+
+                {/* ── Enrollments tab ── */}
+                {analyticsTab === "enrollments" && (
+                  <>
+                    <h3 className="aprev-section-title">All Enrollments</h3>
+                    {courseRows.length === 0 ? (
+                      <p className="aprev-description">No enrollments for this course yet.</p>
+                    ) : (
+                      <div className="ip-table-wrap">
+                        <table className="ip-table">
+                          <thead>
+                            <tr><th>Student</th><th>Date Enrolled</th><th>Progress</th></tr>
+                          </thead>
+                          <tbody>
+                            {courseRows.map((r) => (
+                              <tr key={r.enrollmentId}>
+                                <td>{r.studentName || "—"}</td>
+                                <td>{fmtDate(r.enrolledAt)}</td>
+                                <td>
+                                  <button className="aprev-progress-btn" onClick={() => openProgress(r)}>
+                                    Show Progress
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* ── Quiz Results tab ── */}
+                {analyticsTab === "quizzes" && (
+                  <>
+                    <h3 className="aprev-section-title">Quiz Performance</h3>
+
+                    {/* Quiz filter chips */}
+                    {quizzes.length > 0 && (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                        <button
+                          className={`cd-tier-chip ${selectedQuizId === null ? "active" : ""}`}
+                          onClick={() => setSelectedQuizId(null)}
+                        >
+                          All Quizzes
+                        </button>
+                        {quizzes.map((q) => (
+                          <button
+                            key={q.quizId}
+                            className={`cd-tier-chip ${selectedQuizId === q.quizId ? "active" : ""}`}
+                            onClick={() => setSelectedQuizId(q.quizId)}
+                          >
+                            {q.title}
+                          </button>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      </div>
+                    )}
+
+                    {quizAttemptsLoading ? (
+                      <p className="aprev-description">Loading quiz results...</p>
+                    ) : quizAttempts.length === 0 ? (
+                      <p className="aprev-description">No quiz attempts yet.</p>
+                    ) : (() => {
+                      const filtered = selectedQuizId
+                        ? quizAttempts.filter((a) => a.quizId === selectedQuizId)
+                        : quizAttempts;
+                      const quizMap = Object.fromEntries(quizzes.map((q) => [q.quizId, q]));
+
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {filtered.map((attempt) => {
+                            const quiz = quizMap[attempt.quizId];
+                            const isExpanded = expandedAttempt === attempt.id;
+                            const scoreColor = attempt.score >= 80 ? "#2e7d32" : attempt.score >= 50 ? "#e65100" : "#c62828";
+
+                            return (
+                              <div key={attempt.id} style={{ border: "1.5px solid #e8e4d8", borderRadius: 10, overflow: "hidden" }}>
+                                {/* Attempt header row */}
+                                <div
+                                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer", background: "#fdfcf9" }}
+                                  onClick={() => setExpandedAttempt(isExpanded ? null : attempt.id)}
+                                >
+                                  <FiAward size={16} color={scoreColor} style={{ flexShrink: 0 }} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>
+                                      {attempt.studentUsername || attempt.studentId}
+                                    </div>
+                                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+                                      {quiz?.title || "Quiz"} · {fmtDate(attempt.takenAt)}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                                    <span style={{ fontWeight: 700, fontSize: 16, color: scoreColor }}>{attempt.score}%</span>
+                                    <span style={{ fontSize: 12, color: "#888" }}>{attempt.correctCount}/{attempt.totalQuestions} correct</span>
+                                    {isExpanded ? <FiChevronUp size={16} color="#888" /> : <FiChevronDown size={16} color="#888" />}
+                                  </div>
+                                </div>
+
+                                {/* Expanded: per-question breakdown */}
+                                {isExpanded && quiz && (
+                                  <div style={{ padding: "0 16px 16px", background: "#fff", borderTop: "1px solid #f0ede5" }}>
+                                    {([...(quiz.questions || [])]).map((q, qIdx) => {
+                                      const wasCorrect = attempt.questionResults?.[q.questionId];
+                                      const chosenIndices = attempt.answers?.[q.questionId] || [];
+
+                                      return (
+                                        <div key={q.questionId} style={{ marginTop: 14, paddingTop: 14, borderTop: qIdx > 0 ? "1px solid #f0ede5" : "none" }}>
+                                          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 8 }}>
+                                            {wasCorrect
+                                              ? <FiCheckCircle size={15} color="#2e7d32" style={{ marginTop: 2, flexShrink: 0 }} />
+                                              : <FiXCircle size={15} color="#c62828" style={{ marginTop: 2, flexShrink: 0 }} />
+                                            }
+                                            <span style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a" }}>
+                                              Q{qIdx + 1}: {q.text}
+                                            </span>
+                                          </div>
+                                          <div style={{ paddingLeft: 24, display: "flex", flexDirection: "column", gap: 5 }}>
+                                            {(q.options || []).map((opt, oIdx) => {
+                                              const isChosen = chosenIndices.includes(oIdx);
+                                              const isCorrectOpt = opt.isCorrect;
+                                              let bg = "transparent", color = "#555", border = "1px solid #e8e4d8";
+                                              if (isCorrectOpt) { bg = "#e8f5e9"; color = "#2e7d32"; border = "1px solid #a5d6a7"; }
+                                              if (isChosen && !isCorrectOpt) { bg = "#ffebee"; color = "#c62828"; border = "1px solid #ef9a9a"; }
+
+                                              return (
+                                                <div key={oIdx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 6, background: bg, border, fontSize: 13, color }}>
+                                                  <span style={{ fontSize: 11 }}>{isChosen ? "●" : "○"}</span>
+                                                  <span style={{ flex: 1 }}>{opt.text}</span>
+                                                  {isCorrectOpt && <span style={{ fontSize: 11, fontWeight: 600, color: "#2e7d32" }}>✓ Correct</span>}
+                                                  {isChosen && !isCorrectOpt && <span style={{ fontSize: 11, fontWeight: 600, color: "#c62828" }}>✗ Wrong</span>}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </section>
             )}
@@ -317,9 +472,29 @@ export default function InstructorCoursePreview({
                 <span className="aprev-status-price">{course.isFree ? "Free" : `$${course.price?.toFixed(2)}`}</span>
                 <span className="aprev-status-label">{enrollmentCount} enrollments</span>
               </div>
-              <button className="ebp-enroll-cta aprev-analytics-btn" onClick={() => setAnalyticsOpen((v) => !v)}>
-                <FiBarChart2 size={16} style={{ marginRight: 8 }} />
-                {analyticsOpen ? "Back to Details" : "Analytics"}
+              <button
+                className="aprev-analytics-btn"
+                onClick={() => setAnalyticsOpen((v) => !v)}
+                style={{
+                  width: '100%',
+                  height: '52px',
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  border: 'none',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer',
+                }}
+              >
+                <FiBarChart2 size={20} />
+                {analyticsOpen ? "Back to Details" : "View Analytics"}
               </button>
             </div>
           </aside>

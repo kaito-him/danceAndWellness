@@ -315,30 +315,28 @@
 /* ── Toast — fixed to TOP-RIGHT ── */
 .ip-toast {
   position: fixed;
-  top: 80px;
-  right: 30px;
-  padding: 14px 20px;
-  border-radius: var(--id-radius-md);
-  font-size: 14px;
+  top: 20px;
+  right: 24px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1;
+  height: auto;
+  min-height: unset;
   font-family: var(--id-font-body);
-  z-index: 500;
-  display: flex;
+  z-index: 99999;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  animation: ipToastIn 0.25s ease;
+  gap: 7px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  animation: ipToastIn 0.2s ease;
+  white-space: nowrap;
+  width: fit-content;
 }
 
 @keyframes ipToastIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .ip-toast.success {

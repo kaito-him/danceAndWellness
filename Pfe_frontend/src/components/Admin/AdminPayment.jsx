@@ -57,6 +57,11 @@ export default function AdminPayment() {
     window.location.href = `/admin?section=students&studentId=${studentId}`;
   };
 
+  const handleCourseClick = (e, courseId) => {
+    e.preventDefault();
+    window.location.href = `/admin?section=course-preview&courseId=${courseId}&returnTo=payments`;
+  };
+
   if (loading) {
     return (
       <div className="ap-loading">
@@ -140,7 +145,15 @@ export default function AdminPayment() {
                         {t.studentName}
                       </a>
                     </td>
-                    <td>{t.courseTitle}</td>
+                    <td>
+                      <a 
+                        href="#" 
+                        className="ap-instructor-link"
+                        onClick={(e) => handleCourseClick(e, t.courseId)}
+                      >
+                        {t.courseTitle}
+                      </a>
+                    </td>
                     <td>
                       <a 
                         href="#" 

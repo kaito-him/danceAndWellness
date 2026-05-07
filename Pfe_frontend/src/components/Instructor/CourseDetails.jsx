@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FiEdit3 } from "react-icons/fi";
 import api from "./../services/api";
 import "../../styles/Coursedetails.css";
@@ -50,6 +51,15 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
   const [stripeLoading, setStripeLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(isDraft);
   const [activeTab, setActiveTab] = useState("lessons"); // "lessons" | "quizzes"
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const [form, setForm] = useState({
     title:        course.title    ?? "",
@@ -104,6 +114,7 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
   const videoInputRefs = useRef({});
  
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const matchedCategoryBySpec = useMemo(() => {
     if (!instructor?.specialization) return null;
     return categories.find(
@@ -121,15 +132,36 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
   // ── Video per lesson ──────────────────────────────────────────
   const applyVideo = (idx, file) => {
     if (!file || !file.type.startsWith("video/")) return;
-    setForm((f) => {
-      const lessons = [...f.lessons];
-      lessons[idx] = {
-        ...lessons[idx],
-        newVideoFile:    file,
-        newVideoPreview: URL.createObjectURL(file),
-      };
-      return { ...f, lessons };
-    });
+    const objectUrl = URL.createObjectURL(file);
+    // Auto-detect duration from video metadata
+    const tempVideo = document.createElement("video");
+    tempVideo.src = objectUrl;
+    tempVideo.onloadedmetadata = () => {
+      const minutes = Math.round(tempVideo.duration / 60) || 1;
+      URL.revokeObjectURL(tempVideo.src);
+      setForm((f) => {
+        const lessons = [...f.lessons];
+        lessons[idx] = {
+          ...lessons[idx],
+          newVideoFile:    file,
+          newVideoPreview: URL.createObjectURL(file),
+          duration:        minutes,
+        };
+        return { ...f, lessons };
+      });
+    };
+    tempVideo.onerror = () => {
+      // Fallback: set without duration if metadata fails
+      setForm((f) => {
+        const lessons = [...f.lessons];
+        lessons[idx] = {
+          ...lessons[idx],
+          newVideoFile:    file,
+          newVideoPreview: URL.createObjectURL(file),
+        };
+        return { ...f, lessons };
+      });
+    };
   };
  
   const handleField = (field, value) =>
@@ -245,15 +277,30 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
   // ── Save ──────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!isEditing) return;
+    setSaveError("");
 
     if (!isDraft && !form.lessons.length) {
-      alert("Course must have at least one lesson.");
+      setSaveError("Course must have at least one lesson.");
       return;
     }
+
+    // Validate all lessons have a non-empty title and a video
+    for (let i = 0; i < form.lessons.length; i++) {
+      const lesson = form.lessons[i];
+      if (!lesson.title?.trim()) {
+        setSaveError(`Lesson ${i + 1} must have a title.`);
+        return;
+      }
+      if (!lesson.mediaUrl && !lesson.newVideoFile) {
+        setSaveError(`Lesson ${i + 1} must have a video.`);
+        return;
+      }
+    }
+
     if (!form.isFree && form.priceType === "custom") {
       const p = parseFloat(form.price);
       if (isNaN(p) || p < 10 || p > 100) {
-        alert("Custom price must be between $10 and $100.");
+        setSaveError("Custom price must be between $10 and $100.");
         return;
       }
     }
@@ -264,11 +311,11 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
         for (let j = 0; j < q.questions.length; j++) {
           const qst = q.questions[j];
           if (qst.options.length < 2) {
-            alert(`Quiz ${i+1}, Question ${j+1} must have at least 2 options.`);
+            setSaveError(`Quiz ${i+1}, Question ${j+1} must have at least 2 options.`);
             return;
           }
           if (!qst.options.some(opt => opt.isCorrect)) {
-            alert(`Quiz ${i+1}, Question ${j+1} must have at least one correct option.`);
+            setSaveError(`Quiz ${i+1}, Question ${j+1} must have at least one correct option.`);
             return;
           }
         }
@@ -309,7 +356,7 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
       onSaved(res.data);
       onClose();
     } catch (err) {
-      alert(err?.response?.data || "Failed to save changes.");
+      setSaveError(err?.response?.data || "Failed to save changes.");
     } finally {
       setLoading(false);
     }
@@ -319,7 +366,7 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
   const thumbSrc = newThumbPreview ?? toSrc(form.thumbnailUrl);
   const stripeBlocked = !form.isFree && stripeStatus && !stripeStatus.chargesEnabled;
  
-  return (
+  return createPortal(
     <div className="cd-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="cd-modal">
  
@@ -356,8 +403,13 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
           <div className="cd-group">
             <label className="cd-label">Course Title</label>
             <input className="cd-input" value={form.title}
-              disabled={!isEditing}
+              disabled={!isEditing || !isDraft}
               onChange={(e) => handleField("title", e.target.value)} />
+            {!isDraft && isEditing && (
+              <div className="cd-hint" style={{ marginTop: 4, fontSize: 12, color: "#888" }}>
+                Title cannot be changed after publishing
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -436,82 +488,99 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
               onChange={(e) => applyThumb(e.target.files[0])} />
           </div>
  
-          {/* Pricing */}
-          <div className="cd-row">
+          {/* Pricing - Only show for drafts */}
+          {isDraft && (
+            <>
+              <div className="cd-row">
+                <div className="cd-group">
+                  <label className="cd-label">Pricing</label>
+                  <div 
+                    className="cd-toggle-row" 
+                    title={isEditing && form.isFree && (!stripeStatus || !stripeStatus.chargesEnabled) ? "Connect Stripe to enable paid courses" : ""}
+                  >
+                    <label className="cd-toggle">
+                      <input type="checkbox" checked={form.isFree}
+                        disabled={!isEditing || stripeLoading || (form.isFree && (!stripeStatus || !stripeStatus.chargesEnabled))}
+                        onChange={(e) => handleField("isFree", e.target.checked)} />
+                      <span className="cd-toggle-slider" />
+                    </label>
+                    <span className="cd-toggle-label">
+                      {form.isFree ? "Free course" : "Paid course"}
+                    </span>
+                  </div>
+                  {isEditing && form.isFree && (!stripeStatus || !stripeStatus.chargesEnabled) && (
+                    <div className="cd-hint warn" style={{ marginTop: 8 }}>
+                      Finish your Stripe onboarding to enable paid publishing.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!form.isFree && (
+                <div className="cd-pricing-details">
+                  <div className="cd-price-type-selector">
+                    <button
+                      type="button"
+                      className={`cd-pts-btn ${form.priceType === "predefined" ? "active" : ""}`}
+                      disabled={!isEditing}
+                      onClick={() => {
+                        handleField("priceType", "predefined");
+                        if (!PRICE_TIERS.includes(form.price)) handleField("price", PRICE_TIERS[0]);
+                      }}
+                    >
+                      Tiers
+                    </button>
+                    <button
+                      type="button"
+                      className={`cd-pts-btn ${form.priceType === "custom" ? "active" : ""}`}
+                      disabled={!isEditing}
+                      onClick={() => handleField("priceType", "custom")}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  {form.priceType === "predefined" ? (
+                    <div className="cd-price-tiers">
+                      {PRICE_TIERS.map((tier) => (
+                        <button
+                          key={tier}
+                          type="button"
+                          className={`cd-tier-chip ${form.price === tier ? "active" : ""}`}
+                          disabled={!isEditing}
+                          onClick={() => handleField("price", tier)}
+                        >
+                          ${tier}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="cd-group">
+                      <label className="cd-label">Custom Price ($)</label>
+                      <input className="cd-input" type="number" min="10" max="100" step="1"
+                        value={form.price}
+                        disabled={!isEditing}
+                        onChange={(e) => handleField("price", e.target.value)} />
+                    </div>
+                  )}
+
+                  {stripeLoading && <div className="cd-hint">Checking Stripe status...</div>}
+                  {stripeBlocked && <div className="cd-hint warn">Stripe onboarding is incomplete for paid publishing.</div>}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Display pricing info for published courses (read-only) */}
+          {!isDraft && (
             <div className="cd-group">
               <label className="cd-label">Pricing</label>
-              <div 
-                className="cd-toggle-row" 
-                title={isEditing && form.isFree && (!stripeStatus || !stripeStatus.chargesEnabled) ? "Connect Stripe to enable paid courses" : ""}
-              >
-                <label className="cd-toggle">
-                  <input type="checkbox" checked={form.isFree}
-                    disabled={!isEditing || stripeLoading || (form.isFree && (!stripeStatus || !stripeStatus.chargesEnabled))}
-                    onChange={(e) => handleField("isFree", e.target.checked)} />
-                  <span className="cd-toggle-slider" />
-                </label>
-                <span className="cd-toggle-label">
-                  {form.isFree ? "Free course" : "Paid course"}
-                </span>
+              <div className="cd-input" style={{ background: '#f5f5f5', cursor: 'not-allowed' }}>
+                {form.isFree ? "Free Course" : `Paid Course - $${form.price}`}
               </div>
-              {isEditing && form.isFree && (!stripeStatus || !stripeStatus.chargesEnabled) && (
-                <div className="cd-hint warn" style={{ marginTop: 8 }}>
-                  Finish your Stripe onboarding to enable paid publishing.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {!form.isFree && (
-            <div className="cd-pricing-details">
-              <div className="cd-price-type-selector">
-                <button
-                  type="button"
-                  className={`cd-pts-btn ${form.priceType === "predefined" ? "active" : ""}`}
-                  disabled={!isEditing}
-                  onClick={() => {
-                    handleField("priceType", "predefined");
-                    if (!PRICE_TIERS.includes(form.price)) handleField("price", PRICE_TIERS[0]);
-                  }}
-                >
-                  Tiers
-                </button>
-                <button
-                  type="button"
-                  className={`cd-pts-btn ${form.priceType === "custom" ? "active" : ""}`}
-                  disabled={!isEditing}
-                  onClick={() => handleField("priceType", "custom")}
-                >
-                  Custom
-                </button>
+              <div className="cd-hint" style={{ marginTop: 4, fontSize: 12, color: "#888" }}>
+                Pricing cannot be changed after publishing
               </div>
-
-              {form.priceType === "predefined" ? (
-                <div className="cd-price-tiers">
-                  {PRICE_TIERS.map((tier) => (
-                    <button
-                      key={tier}
-                      type="button"
-                      className={`cd-tier-chip ${form.price === tier ? "active" : ""}`}
-                      disabled={!isEditing}
-                      onClick={() => handleField("price", tier)}
-                    >
-                      ${tier}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="cd-group">
-                  <label className="cd-label">Custom Price ($)</label>
-                  <input className="cd-input" type="number" min="10" max="100" step="1"
-                    value={form.price}
-                    disabled={!isEditing}
-                    onChange={(e) => handleField("price", e.target.value)} />
-                </div>
-              )}
-
-              {stripeLoading && <div className="cd-hint">Checking Stripe status...</div>}
-              {stripeBlocked && <div className="cd-hint warn">Stripe onboarding is incomplete for paid publishing.</div>}
             </div>
           )}
  
@@ -550,14 +619,13 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
               <div className="cd-lesson" key={lesson.lessonId ?? idx}>
                 <div className="cd-lesson-head">
                   <span className="cd-lesson-num">Lesson {idx + 1}</span>
-                  {isEditing && (
+                  {isEditing && isDraft && (
                     <button
                       type="button"
                       className="cd-media-btn"
                       style={{ marginLeft: "auto", padding: "6px 10px", fontSize: 12 }}
                       onClick={() => removeLesson(idx)}
-                      disabled={!isDraft && form.lessons.length <= 1}
-                      title={!isDraft && form.lessons.length <= 1 ? "At least one lesson is required for publish" : "Remove lesson"}
+                      title="Remove lesson"
                     >
                       Remove
                     </button>
@@ -590,24 +658,33 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
                         <span>No video</span>
                       </div>
                     )}
-                    <div className="cd-media-overlay">
-                      <button type="button" className="cd-media-btn"
-                        disabled={!isEditing}
-                        onClick={() => videoInputRefs.current[idx]?.click()}>
-                        {videoSrc ? "Change Video" : "Upload Video"}
-                      </button>
-                    </div>
+                    {(isDraft || !lesson.mediaUrl) && (
+                      <div className="cd-media-overlay">
+                        <button type="button" className="cd-media-btn"
+                          disabled={!isEditing}
+                          onClick={() => videoInputRefs.current[idx]?.click()}>
+                          {videoSrc ? "Change Video" : "Upload Video"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {lesson.newVideoFile && (
                     <span className="cd-filename">{lesson.newVideoFile.name}</span>
                   )}
-                  <input
-                    type="file"
-                    accept="video/mp4,video/quicktime,video/webm"
-                    style={{ display: "none" }}
-                    ref={(el) => { videoInputRefs.current[idx] = el; }}
-                    onChange={(e) => applyVideo(idx, e.target.files[0])}
-                  />
+                  {(isDraft || !lesson.mediaUrl) && (
+                    <input
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      style={{ display: "none" }}
+                      ref={(el) => { videoInputRefs.current[idx] = el; }}
+                      onChange={(e) => applyVideo(idx, e.target.files[0])}
+                    />
+                  )}
+                  {!isDraft && !!lesson.mediaUrl && isEditing && (
+                    <div className="cd-hint" style={{ marginTop: 4, fontSize: 12, color: "#888" }}>
+                      Videos cannot be changed after publishing
+                    </div>
+                  )}
                 </div>
  
               </div>
@@ -744,6 +821,20 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
  
         {/* ── Footer ── */}
         <div className="cd-footer">
+          {saveError && (
+            <p style={{
+              color: "#c0392b",
+              fontSize: "13px",
+              fontWeight: 500,
+              margin: 0,
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}>
+              <span style={{ fontSize: "15px" }}>⚠</span> {saveError}
+            </p>
+          )}
           <button className="cd-btn-cancel" onClick={onClose}>Cancel</button>
           {isEditing && (
             <button className="cd-btn-save" onClick={handleSave} disabled={loading || stripeLoading}>
@@ -756,5 +847,5 @@ export default function CourseDetails({ course, onClose, onSaved, instructor }) 
  
       </div>
     </div>
-  );
+  , document.body);
 }

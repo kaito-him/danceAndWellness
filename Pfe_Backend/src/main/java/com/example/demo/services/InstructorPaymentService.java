@@ -30,7 +30,7 @@ public class InstructorPaymentService {
     /** Platform keeps 20 % → instructor earns 80 % */
     private static final double INSTRUCTOR_SHARE = 0.80;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
     private final InstructorRepository instructorRepository;
@@ -77,8 +77,8 @@ public class InstructorPaymentService {
         AccountLink link = AccountLink.create(
                 AccountLinkCreateParams.builder()
                         .setAccount(accountId)
-                        .setRefreshUrl(frontendUrl + "/instructor/payments?onboarding=refresh")
-                        .setReturnUrl(frontendUrl + "/instructor/payments?onboarding=complete")
+                        .setRefreshUrl(frontendUrl + "/instructor?section=payments&onboarding=refresh")
+                        .setReturnUrl(frontendUrl + "/instructor?section=payments&onboarding=complete")
                         .setType(AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING)
                         .build());
 
