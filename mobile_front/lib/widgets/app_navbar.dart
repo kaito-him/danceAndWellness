@@ -7,11 +7,13 @@ import '../utils/app_theme.dart';
 class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showNotification;
+  final Widget? leading;
 
   const AppNavbar({
     super.key,
     required this.title,
     this.showNotification = true,
+    this.leading,
   });
 
   @override
@@ -20,6 +22,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       centerTitle: true,
+      leading: leading,
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

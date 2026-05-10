@@ -16,4 +16,10 @@ class Category {
       icon: json['icon'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    if (icon != null) 'icon': icon,
+  };
 }

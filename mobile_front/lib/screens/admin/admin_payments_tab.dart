@@ -134,7 +134,7 @@ class _AdminPaymentsTabState extends State<AdminPaymentsTab> {
   }
 
   String _formatCurrency(double amount) {
-    return NumberFormat.currency(symbol: '$', decimalDigits: 2).format(amount);
+    return NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(amount);
   }
 
   void _navigateToUser(String userId, String role) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/badge.dart';
+import '../../models/badge.dart' as badge_model;
 import '../../models/category.dart';
 import '../../services/badge_service.dart';
 import '../../services/category_service.dart';
@@ -16,7 +16,7 @@ class AdminBadgesTab extends StatefulWidget {
 
 class _AdminBadgesTabState extends State<AdminBadgesTab> {
   final _badgeService = BadgeService();
-  List<Badge> _badges = [];
+  List<badge_model.Badge> _badges = [];
   Map<String, int> _counts = {};
   bool _loading = true;
 
@@ -46,7 +46,7 @@ class _AdminBadgesTabState extends State<AdminBadgesTab> {
     }
   }
 
-  void _showBadgeDialog([Badge? badge]) {
+  void _showBadgeDialog([badge_model.Badge? badge]) {
     final nameController = TextEditingController(text: badge?.name);
     final achController = TextEditingController(text: badge?.achievement);
     String type = badge?.type ?? 'LEVEL';
@@ -88,7 +88,7 @@ class _AdminBadgesTabState extends State<AdminBadgesTab> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
-                final newBadge = Badge(
+                final newBadge = badge_model.Badge(
                   id: badge?.id ?? '',
                   name: nameController.text,
                   achievement: achController.text,
@@ -143,7 +143,7 @@ class _AdminBadgesTabState extends State<AdminBadgesTab> {
     );
   }
 
-  Widget _buildBadgeCard(Badge b, int earners) {
+  Widget _buildBadgeCard(badge_model.Badge b, int earners) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
