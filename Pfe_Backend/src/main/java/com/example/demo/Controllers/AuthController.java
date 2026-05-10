@@ -105,6 +105,20 @@ public class AuthController {
         ));
     }
 
+    // ── Availability Checks ───────────────────────────────────────────────────
+
+    @GetMapping("/check-username")
+    public ResponseEntity<?> checkUsername(@RequestParam String username) {
+        boolean taken = userRepository.findByUsername(username.trim()).isPresent();
+        return ResponseEntity.ok(Map.of("available", !taken));
+    }
+
+    @GetMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestParam String email) {
+        boolean taken = userRepository.findByEmail(email.trim()).isPresent();
+        return ResponseEntity.ok(Map.of("available", !taken));
+    }
+
     // ── Forgot Password ───────────────────────────────────────────────────────
 
     @PostMapping("/forgot-password/request")
