@@ -15,3 +15,6 @@ Thumbs.db
 recommendation_system/venv/
 recommendation_system/__pycache__/
 recommendation_system/*.pyc
+
+# Zip archives
+**/*.zip
