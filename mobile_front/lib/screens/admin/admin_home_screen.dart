@@ -7,6 +7,9 @@ import '../../widgets/app_drawer.dart';
 import '../../utils/app_theme.dart';
 import 'admin_profile_tab.dart';
 import 'admin_courses_tab.dart';
+import 'admin_accounts_tab.dart';
+import 'admin_payments_tab.dart';
+import 'admin_management_tabs.dart';
 import 'admin_placeholder_tabs.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -18,6 +21,11 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _selectedIndex = 0;
+  String? _subSection;
+  
+  // To force refresh deep linked tabs
+  Key _accountsKey = UniqueKey();
+  Key _coursesKey = UniqueKey();
 
   @override
   void initState() {
@@ -28,13 +36,39 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   // Called by AppDrawer "Profile" tap to jump to the profile tab
-  void goToProfile() => setState(() => _selectedIndex = 3);
+  void goToProfile() => setState(() {
+    _selectedIndex = 3;
+    _subSection = null;
+  });
 
-  static const _tabs = [
-    AdminCoursesTab(),
-    AdminAccountsTab(),
-    AdminPaymentsTab(),
-    AdminProfileTab(),
+  void onSectionTap(String section) {
+    setState(() {
+      _subSection = section;
+      // If the section is a filtered version of an existing tab, we update those
+      if (section == 'banned' || section == 'highlight') {
+        _selectedIndex = 1; // Accounts tab
+        _accountsKey = UniqueKey(); // Force rebuild with new initial filters
+      } else if (section == 'archived') {
+        _selectedIndex = 0; // Courses tab
+        _coursesKey = UniqueKey();
+      }
+    });
+  }
+
+  List<Widget> get _tabs => [
+    AdminCoursesTab(
+      key: _coursesKey,
+      initialSection: _subSection == 'archived' ? AdminCourseSection.archived : null,
+    ),
+    AdminAccountsTab(
+      key: _accountsKey,
+      initialStatusFilter: _subSection == 'banned' ? 'INACTIVE' : 'ALL',
+      initialRoleFilter: _subSection == 'highlight' ? 'INSTRUCTOR' : 'ALL',
+    ),
+    const AdminPaymentsTab(),
+    const AdminProfileTab(),
+    const AdminBadgesTab(),
+    const AdminCategoriesTab(),
   ];
 
   static const _tabMeta = [
@@ -48,8 +82,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.pageBackground,
-      appBar: const AppNavbar(title: 'Admin Dashboard'),
-      drawer: AppDrawer(onProfileTap: goToProfile),
+      appBar: AppNavbar(
+        title: _subSection != null ? _getSectionTitle(_subSection!) : 'Admin Dashboard',
+        leading: _subSection != null ? IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => setState(() => _subSection = null),
+        ) : null,
+      ),
+      drawer: AppDrawer(onProfileTap: goToProfile, onSectionTap: onSectionTap),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppTheme.pureWhite,
@@ -73,7 +113,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
       body: IndexedStack(
-        index: _selectedIndex,
+        index: _subSection == 'badges' ? 4 : (_subSection == 'categories' ? 5 : _selectedIndex),
         children: _tabs,
       ),
     );
@@ -123,6 +163,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
     );
+  }
+
+  String _getSectionTitle(String section) {
+    switch (section) {
+      case 'banned': return 'Banned Accounts';
+      case 'highlight': return 'Highlight Instructors';
+      case 'archived': return 'Archived Courses';
+      case 'badges': return 'Manage Badges';
+      case 'categories': return 'Manage Categories';
+      default: return 'Admin Management';
+    }
   }
 }
 

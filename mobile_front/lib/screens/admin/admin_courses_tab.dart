@@ -12,7 +12,8 @@ import 'package:go_router/go_router.dart'; // optional if using Navigator
 enum AdminCourseSection { published, archived }
 
 class AdminCoursesTab extends StatefulWidget {
-  const AdminCoursesTab({super.key});
+  final AdminCourseSection? initialSection;
+  const AdminCoursesTab({super.key, this.initialSection});
 
   @override
   State<AdminCoursesTab> createState() => _AdminCoursesTabState();
@@ -38,6 +39,9 @@ class _AdminCoursesTabState extends State<AdminCoursesTab> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialSection != null) {
+      _activeSection = widget.initialSection!;
+    }
     _fetchData();
   }
 

@@ -19,4 +19,21 @@ class CategoryService {
       throw Exception('Failed to load categories: ${e.message}');
     }
   }
+
+  Future<Category> addCategory(Category category) async {
+    try {
+      final response = await _apiClient.dio.post('/categories', data: category.toJson());
+      return Category.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to add category: ${e.message}');
+    }
+  }
+
+  Future<void> deleteCategory(String id) async {
+    try {
+      await _apiClient.dio.delete('/categories/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete category: ${e.message}');
+    }
+  }
 }

@@ -11,9 +11,10 @@ import '../utils/app_theme.dart';
 class AppDrawer extends StatefulWidget {
   /// Optional callback for navigating to a specific section within the home screen.
   /// Used by Admin to jump directly to the Profile tab.
+  final Function(String)? onSectionTap;
   final VoidCallback? onProfileTap;
 
-  const AppDrawer({super.key, this.onProfileTap});
+  const AppDrawer({super.key, this.onProfileTap, this.onSectionTap});
 
   @override
   State<AppDrawer> createState() => _AppDrawerState();
@@ -87,6 +88,14 @@ class _AppDrawerState extends State<AppDrawer> {
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Divider(color: AppTheme.mediumGray),
           ),
+
+          if (role == UserRole.admin) ...[
+            _buildAdminSection(context),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Divider(color: AppTheme.mediumGray),
+            ),
+          ],
 
           // ── Spacer ───────────────────────────────────────────────────────
           const Spacer(),
@@ -228,6 +237,66 @@ class _AppDrawerState extends State<AppDrawer> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAdminSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Text(
+            'MANAGEMENT',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        _buildNavItem(
+          icon: Icons.block_flipped,
+          label: 'Banned Accounts',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('banned');
+          },
+        ),
+        _buildNavItem(
+          icon: Icons.star_rounded,
+          label: 'Highlight Instructors',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('highlight');
+          },
+        ),
+        _buildNavItem(
+          icon: Icons.archive_outlined,
+          label: 'Archived Courses',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('archived');
+          },
+        ),
+        _buildNavItem(
+          icon: Icons.emoji_events_outlined,
+          label: 'Badges',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('badges');
+          },
+        ),
+        _buildNavItem(
+          icon: Icons.category_outlined,
+          label: 'Categories',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('categories');
+          },
+        ),
+      ],
     );
   }
 

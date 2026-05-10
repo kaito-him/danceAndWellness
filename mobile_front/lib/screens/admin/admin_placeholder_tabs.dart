@@ -2,33 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
 
 
-class AdminAccountsTab extends StatelessWidget {
-  const AdminAccountsTab({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return _buildComingSoon(
-      context,
-      icon: Icons.manage_accounts_outlined,
-      title: 'Account Management',
-      subtitle: 'View, manage, and moderate student and instructor accounts.',
-    );
-  }
-}
-
-class AdminPaymentsTab extends StatelessWidget {
-  const AdminPaymentsTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return _buildComingSoon(
-      context,
-      icon: Icons.payments_outlined,
-      title: 'Payments & Revenue',
-      subtitle: 'Monitor transactions, payouts, and platform revenue.',
-    );
-  }
-}
 
 Widget _buildComingSoon(
   BuildContext context, {
