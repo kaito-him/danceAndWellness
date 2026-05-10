@@ -182,7 +182,7 @@ export default function QuizModal({ quiz, courseId, attempt: existingAttempt, on
                 : selected[q.questionId];
 
               const correctIndices = new Set(
-                (q.options || []).map((o, i) => Boolean(o.isCorrect) ? i : -1).filter(i => i >= 0)
+                (q.options || []).map((o, i) => o.isCorrect ? i : -1).filter(i => i >= 0)
               );
               const hasMultipleCorrect = correctIndices.size > 1;
 

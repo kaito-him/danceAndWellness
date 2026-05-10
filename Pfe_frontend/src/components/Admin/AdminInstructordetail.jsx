@@ -14,7 +14,7 @@ import {
   FiSlash,
   FiCheckCircle,
 } from "react-icons/fi";
-import InstructorCourseCard from "./InstructorCourseCard";
+import InstructorCourseCard from "./Instructorcoursecard";
 import api from "./../services/api";
 import "../../styles/AdminInstructorDetail.css";
 

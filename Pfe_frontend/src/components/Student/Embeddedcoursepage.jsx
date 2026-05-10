@@ -400,7 +400,7 @@ export default function EmbeddedCoursePage({ courseId, onBack, onBrowseLessons }
                         <button
                           onClick={() => setActiveQuiz(quiz)}
                           style={{
-                            padding: "8px 18px", borderRadius: 9, border: "none",
+                            padding: "8px 18px", borderRadius: 9,
                             background: taken ? "transparent" : "#b89c4d",
                             color: taken ? "#b89c4d" : "#fff",
                             border: taken ? "1.5px solid #b89c4d" : "none",
