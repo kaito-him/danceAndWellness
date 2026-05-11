@@ -12,10 +12,13 @@ class AppUser {
   final String? specialization;
   final int totalCourses;
   final String? yearsOfExperience;
+  final String? linkedIn;
+  final String? website;
 
   // Student specific
   final String? lastLoginDate;
   final String? createdAt;
+  final List<String> badgeIds;
 
   AppUser({
     required this.userId,
@@ -29,8 +32,11 @@ class AppUser {
     this.specialization,
     this.totalCourses = 0,
     this.yearsOfExperience,
+    this.linkedIn,
+    this.website,
     this.lastLoginDate,
     this.createdAt,
+    this.badgeIds = const [],
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json, String role) {
@@ -46,8 +52,11 @@ class AppUser {
       specialization: json['specialization'],
       totalCourses: json['totalCourses'] ?? 0,
       yearsOfExperience: json['yearsOfExperience'],
+      linkedIn: json['linkedIn'],
+      website: json['website'],
       lastLoginDate: json['lastLoginDate'],
       createdAt: json['createdAt'],
+      badgeIds: json['badgeIds'] != null ? List<String>.from(json['badgeIds']) : [],
     );
   }
 }

@@ -59,4 +59,13 @@ class AdminUserService {
       throw Exception(e.response?.data?.toString() ?? 'Failed to unhighlight instructor');
     }
   }
+
+  Future<List<dynamic>> getInstructorCourses(String instructorId) async {
+    try {
+      final response = await _apiClient.dio.get('/instructors/$instructorId/courses');
+      return response.data as List<dynamic>;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load instructor courses');
+    }
+  }
 }

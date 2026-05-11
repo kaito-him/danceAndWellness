@@ -16,7 +16,7 @@ class ApiClient {
   //
   // MAKE SURE: Your phone and computer are on the SAME WiFi network!
   
-  static const String baseUrl = 'http://192.168.31.247:8080/api';
+  static const String baseUrl = 'http://192.168.1.83:8080/api';
   
   /// Helper to convert backend paths (like /api/files/...) to full URLs
   static String formatMediaUrl(String? path) {
@@ -62,4 +62,18 @@ class ApiClient {
   }
 
   Dio get dio => _dio;
+
+  Future<String> uploadFile(String filePath) async {
+    try {
+      final fileName = filePath.split('/').last;
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+
+      final response = await _dio.post('/files/upload', data: formData);
+      return response.data['id'] as String;
+    } catch (e) {
+      throw Exception('Upload failed: $e');
+    }
+  }
 }

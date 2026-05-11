@@ -10,7 +10,7 @@ import 'admin_courses_tab.dart';
 import 'admin_accounts_tab.dart';
 import 'admin_payments_tab.dart';
 import 'admin_management_tabs.dart';
-import 'admin_placeholder_tabs.dart';
+import 'admin_search_tab.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -37,7 +37,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   // Called by AppDrawer "Profile" tap to jump to the profile tab
   void goToProfile() => setState(() {
-    _selectedIndex = 3;
+    _selectedIndex = 4;
     _subSection = null;
   });
 
@@ -66,6 +66,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       initialRoleFilter: _subSection == 'highlight' ? 'INSTRUCTOR' : 'ALL',
     ),
     const AdminPaymentsTab(),
+    const AdminSearchTab(),
     const AdminProfileTab(),
     const AdminBadgesTab(),
     const AdminCategoriesTab(),
@@ -75,6 +76,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     _TabMeta(Icons.menu_book_outlined,      Icons.menu_book_rounded,         'Courses'),
     _TabMeta(Icons.manage_accounts_outlined, Icons.manage_accounts_rounded,   'Accounts'),
     _TabMeta(Icons.payments_outlined,        Icons.payments_rounded,           'Payments'),
+    _TabMeta(Icons.search_outlined,          Icons.search_rounded,             'Search'),
     _TabMeta(Icons.person_outline_rounded,   Icons.person_rounded,            'Profile'),
   ];
 
@@ -113,7 +115,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
       body: IndexedStack(
-        index: _subSection == 'badges' ? 4 : (_subSection == 'categories' ? 5 : _selectedIndex),
+        index: _subSection == 'badges' ? 5 : (_subSection == 'categories' ? 6 : _selectedIndex),
         children: _tabs,
       ),
     );

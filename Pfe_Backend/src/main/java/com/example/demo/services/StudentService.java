@@ -137,6 +137,7 @@ public class StudentService {
                 .photo(student.getPhoto() != null ? student.getPhoto() : user.getPhoto())
                 .createdAt(user.getCreatedAt())
                 .lastLoginDate(user.getLastLoginDate())
+                .badgeIds(student.getBadgeIds())
                 .build();
     }
 }

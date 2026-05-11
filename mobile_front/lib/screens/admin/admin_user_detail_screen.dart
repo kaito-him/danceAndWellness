@@ -16,11 +16,31 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   late AppUser _user;
   final AdminUserService _userService = AdminUserService();
   bool _processing = false;
+  List<dynamic> _instructorCourses = [];
+  bool _loadingCourses = false;
 
   @override
   void initState() {
     super.initState();
     _user = widget.user;
+    if (_user.role == 'INSTRUCTOR' && _user.id != null) {
+      _fetchInstructorCourses();
+    }
+  }
+
+  Future<void> _fetchInstructorCourses() async {
+    setState(() => _loadingCourses = true);
+    try {
+      final courses = await _userService.getInstructorCourses(_user.id!);
+      if (mounted) {
+        setState(() {
+          _instructorCourses = courses;
+          _loadingCourses = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingCourses = false);
+    }
   }
 
   void _showToast(String msg, {bool isError = false}) {
@@ -32,8 +52,26 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   }
 
   Future<void> _handleBanAction() async {
-    setState(() => _processing = true);
     final isBanned = _user.accountStatus == 'INACTIVE';
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isBanned ? 'Unban User' : 'Ban User'),
+        content: Text('Are you sure you want to ${isBanned ? 'unban' : 'ban'} ${_user.username}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(isBanned ? 'Unban' : 'Ban', style: TextStyle(color: isBanned ? Colors.green : Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _processing = true);
     try {
       if (isBanned) {
         await _userService.unbanUser(_user.userId);
@@ -58,6 +96,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
           specialization: _user.specialization,
           totalCourses: _user.totalCourses,
           yearsOfExperience: _user.yearsOfExperience,
+          linkedIn: _user.linkedIn,
+          website: _user.website,
           lastLoginDate: _user.lastLoginDate,
           createdAt: _user.createdAt,
         );
@@ -70,6 +110,25 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   }
 
   Future<void> _handleHighlightAction() async {
+    final willHighlight = !_user.featured;
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(willHighlight ? 'Highlight Instructor' : 'Unhighlight Instructor'),
+        content: Text('Are you sure you want to ${willHighlight ? 'highlight' : 'unhighlight'} ${_user.username}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(willHighlight ? 'Highlight' : 'Unhighlight', style: const TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     setState(() => _processing = true);
     try {
       if (_user.featured) {
@@ -92,6 +151,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
           specialization: _user.specialization,
           totalCourses: _user.totalCourses,
           yearsOfExperience: _user.yearsOfExperience,
+          linkedIn: _user.linkedIn,
+          website: _user.website,
           lastLoginDate: _user.lastLoginDate,
           createdAt: _user.createdAt,
         );
@@ -106,7 +167,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.pageBackground,
       appBar: AppBar(
         title: const Text('User Details'),
         centerTitle: true,
@@ -207,8 +268,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _processing ? null : _handleBanAction,
-            icon: Icon(isBanned ? Icons.check_circle_outline : Icons.block_flipped),
-            label: Text(isBanned ? 'Unban User' : 'Ban User'),
+            icon: _processing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Icon(isBanned ? Icons.check_circle_outline : Icons.block_flipped),
+            label: Text(_processing ? 'Processing...' : (isBanned ? 'Unban User' : 'Ban User')),
             style: ElevatedButton.styleFrom(
               backgroundColor: isBanned ? Colors.green : Colors.red,
               foregroundColor: Colors.white,
@@ -222,8 +283,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: _processing ? null : _handleHighlightAction,
-              icon: Icon(_user.featured ? Icons.star_border_rounded : Icons.star_rounded),
-              label: Text(_user.featured ? 'Unhighlight' : 'Highlight'),
+              icon: _processing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Icon(_user.featured ? Icons.star_border_rounded : Icons.star_rounded),
+              label: Text(_processing ? 'Processing...' : (_user.featured ? 'Unhighlight' : 'Highlight')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
@@ -243,8 +304,6 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       children: [
         const Text('Account Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
         const SizedBox(height: 16),
-        _buildDetailRow('User ID', _user.userId),
-        if (_user.id != null) _buildDetailRow('Internal ID', _user.id!),
         _buildDetailRow('Email Address', _user.email),
       ],
     );
@@ -258,8 +317,72 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         const SizedBox(height: 16),
         _buildDetailRow('Specialization', _user.specialization ?? 'Not set'),
         _buildDetailRow('Experience', _user.yearsOfExperience ?? 'Not set'),
-        _buildDetailRow('Published Courses', '${_user.totalCourses}'),
+        _buildDetailRow('LinkedIn', _user.linkedIn ?? 'Not set'),
+        _buildDetailRow('Website', _user.website ?? 'Not set'),
+        _buildDetailRow('Total Courses', '${_user.totalCourses}'),
+        const SizedBox(height: 16),
+        const Text('Published Courses', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+        const SizedBox(height: 12),
+        if (_loadingCourses)
+          const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold))
+        else if (_instructorCourses.isEmpty)
+          const Text('No courses found.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13))
+        else
+          ..._instructorCourses.map((c) => _buildCourseItem(c)),
       ],
+    );
+  }
+
+  Widget _buildCourseItem(Map<String, dynamic> course) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.paleGold),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: course['thumbnailUrl'] != null
+                ? Image.network(
+                    ApiClient.formatMediaUrl(course['thumbnailUrl']),
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  )
+                : Container(width: 60, height: 60, color: AppTheme.lightGray, child: const Icon(Icons.movie_rounded, color: AppTheme.mediumGray)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(course['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(course['categoryName'] ?? 'No Category', style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: course['status'] == 'PUBLISHED' ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              course['status'] ?? 'DRAFT',
+              style: TextStyle(
+                color: course['status'] == 'PUBLISHED' ? Colors.green : Colors.orange,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -23,6 +23,7 @@ class _AdminAccountsTabState extends State<AdminAccountsTab> {
   String _searchQuery = '';
   String _roleFilter = 'ALL';
   String _statusFilter = 'ALL';
+  final Set<String> _processingUserIds = {};
 
   @override
   void initState() {
@@ -73,6 +74,25 @@ class _AdminAccountsTabState extends State<AdminAccountsTab> {
 
   Future<void> _handleBanAction(AppUser user) async {
     final isBanned = user.accountStatus == 'INACTIVE';
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isBanned ? 'Unban User' : 'Ban User'),
+        content: Text('Are you sure you want to ${isBanned ? 'unban' : 'ban'} ${user.username}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(isBanned ? 'Unban' : 'Ban', style: TextStyle(color: isBanned ? Colors.green : Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _processingUserIds.add(user.userId));
     try {
       if (isBanned) {
         await _userService.unbanUser(user.userId);
@@ -84,11 +104,33 @@ class _AdminAccountsTabState extends State<AdminAccountsTab> {
       _fetchUsers();
     } catch (e) {
       _showToast('Failed to update account status', isError: true);
+    } finally {
+      if (mounted) setState(() => _processingUserIds.remove(user.userId));
     }
   }
 
   Future<void> _handleHighlightAction(AppUser user) async {
     if (user.role != 'INSTRUCTOR') return;
+    final willHighlight = !user.featured;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(willHighlight ? 'Highlight Instructor' : 'Unhighlight Instructor'),
+        content: Text('Are you sure you want to ${willHighlight ? 'highlight' : 'unhighlight'} ${user.username}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(willHighlight ? 'Highlight' : 'Unhighlight', style: const TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _processingUserIds.add(user.userId));
     try {
       if (user.featured) {
         await _userService.unhighlightInstructor(user.id!);
@@ -100,6 +142,8 @@ class _AdminAccountsTabState extends State<AdminAccountsTab> {
       _fetchUsers();
     } catch (e) {
       _showToast('Failed to update highlight status', isError: true);
+    } finally {
+      if (mounted) setState(() => _processingUserIds.remove(user.userId));
     }
   }
 
@@ -284,6 +328,12 @@ class _AdminAccountsTabState extends State<AdminAccountsTab> {
   }
 
   Widget _buildPopupMenu(AppUser user) {
+    if (_processingUserIds.contains(user.userId)) {
+      return const Padding(
+        padding: EdgeInsets.all(12.0),
+        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryGold)),
+      );
+    }
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, color: AppTheme.mediumGray),
       onSelected: (val) {

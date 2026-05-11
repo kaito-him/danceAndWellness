@@ -18,7 +18,7 @@ class Badge {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       achievement: json['achievement'] ?? '',
-      iconUrl: json['iconUrl'],
+      iconUrl: json['iconUrl'] ?? json['icon'],
       type: json['type'] ?? 'LEVEL',
     );
   }

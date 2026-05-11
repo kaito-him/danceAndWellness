@@ -21,4 +21,5 @@ public class StudentDTO {
 
     private LocalDate createdAt;
     private LocalDateTime lastLoginDate;
+    private java.util.List<String> badgeIds;
 }
