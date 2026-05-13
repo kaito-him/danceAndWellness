@@ -11,6 +11,8 @@ import 'admin_accounts_tab.dart';
 import 'admin_payments_tab.dart';
 import 'admin_management_tabs.dart';
 import 'admin_search_tab.dart';
+import 'admin_instructor_applications_tab.dart';
+
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -44,15 +46,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void onSectionTap(String section) {
     setState(() {
       _subSection = section;
-      // If the section is a filtered version of an existing tab, we update those
       if (section == 'banned' || section == 'highlight') {
-        _selectedIndex = 1; // Accounts tab
-        _accountsKey = UniqueKey(); // Force rebuild with new initial filters
+        _selectedIndex = 2; // Accounts tab (index 2)
+        _accountsKey = UniqueKey();
       } else if (section == 'archived') {
         _selectedIndex = 0; // Courses tab
-        _coursesKey = UniqueKey();
+      } else if (section == 'applications') {
+        _selectedIndex = 0; // Doesn't matter as subSection overrides
       }
     });
+
   }
 
   List<Widget> get _tabs => [
@@ -60,23 +63,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       key: _coursesKey,
       initialSection: _subSection == 'archived' ? AdminCourseSection.archived : null,
     ),
+    const AdminSearchTab(),
     AdminAccountsTab(
       key: _accountsKey,
       initialStatusFilter: _subSection == 'banned' ? 'INACTIVE' : 'ALL',
       initialRoleFilter: _subSection == 'highlight' ? 'INSTRUCTOR' : 'ALL',
     ),
     const AdminPaymentsTab(),
-    const AdminSearchTab(),
     const AdminProfileTab(),
     const AdminBadgesTab(),
     const AdminCategoriesTab(),
+    const AdminInstructorApplicationsTab(),
   ];
+
 
   static const _tabMeta = [
     _TabMeta(Icons.menu_book_outlined,      Icons.menu_book_rounded,         'Courses'),
+    _TabMeta(Icons.search_outlined,          Icons.search_rounded,             'Search'),
     _TabMeta(Icons.manage_accounts_outlined, Icons.manage_accounts_rounded,   'Accounts'),
     _TabMeta(Icons.payments_outlined,        Icons.payments_rounded,           'Payments'),
-    _TabMeta(Icons.search_outlined,          Icons.search_rounded,             'Search'),
     _TabMeta(Icons.person_outline_rounded,   Icons.person_rounded,            'Profile'),
   ];
 
@@ -115,9 +120,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
       body: IndexedStack(
-        index: _subSection == 'badges' ? 5 : (_subSection == 'categories' ? 6 : _selectedIndex),
+        index: _subSection == 'badges' ? 5 : (_subSection == 'categories' ? 6 : (_subSection == 'applications' ? 7 : _selectedIndex)),
         children: _tabs,
       ),
+
     );
   }
 
@@ -128,7 +134,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _selectedIndex = index),
+        onTap: () => setState(() {
+          _selectedIndex = index;
+          _subSection = null;
+        }),
+
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -174,7 +184,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 'archived': return 'Archived Courses';
       case 'badges': return 'Manage Badges';
       case 'categories': return 'Manage Categories';
+      case 'applications': return 'Instructor Applications';
       default: return 'Admin Management';
+
     }
   }
 }

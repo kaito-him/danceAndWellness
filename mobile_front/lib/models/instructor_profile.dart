@@ -12,6 +12,9 @@ class InstructorProfile {
   final String? photo;
   final bool featured;
   final int totalCourses;
+  final dynamic appliedAt;
+  final String? certificationFileId;
+  final String? certificationFileName;
 
   InstructorProfile({
     required this.id,
@@ -27,6 +30,9 @@ class InstructorProfile {
     this.photo,
     this.featured = false,
     this.totalCourses = 0,
+    this.appliedAt,
+    this.certificationFileId,
+    this.certificationFileName,
   });
 
   factory InstructorProfile.fromJson(Map<String, dynamic> json) {
@@ -44,6 +50,9 @@ class InstructorProfile {
       photo: json['photo'],
       featured: json['featured'] ?? false,
       totalCourses: json['totalCourses'] ?? 0,
+      appliedAt: json['appliedAt'],
+      certificationFileId: json['certificationFileId'],
+      certificationFileName: json['certificationFileName'],
     );
   }
 }

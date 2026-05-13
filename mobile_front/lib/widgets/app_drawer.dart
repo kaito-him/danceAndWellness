@@ -72,33 +72,37 @@ class _AppDrawerState extends State<AppDrawer> {
           _buildHeader(context, auth, username, roleLabel, initials),
 
           // ── Navigation Items ─────────────────────────────────────────────
-          const SizedBox(height: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  _buildNavItem(
+                    icon: Icons.notifications_outlined,
+                    label: 'Notifications',
+                    trailing: _buildUnreadBadge(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/notifications');
+                    },
+                  ),
 
-          _buildNavItem(
-            icon: Icons.notifications_outlined,
-            label: 'Notifications',
-            trailing: _buildUnreadBadge(context),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/notifications');
-            },
-          ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Divider(color: AppTheme.mediumGray),
+                  ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Divider(color: AppTheme.mediumGray),
-          ),
-
-          if (role == UserRole.admin) ...[
-            _buildAdminSection(context),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Divider(color: AppTheme.mediumGray),
+                  if (role == UserRole.admin) ...[
+                    _buildAdminSection(context),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Divider(color: AppTheme.mediumGray),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ],
-
-          // ── Spacer ───────────────────────────────────────────────────────
-          const Spacer(),
+          ),
 
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
@@ -114,6 +118,7 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
           const SizedBox(height: 24),
         ],
+
       ),
     );
   }
@@ -257,7 +262,16 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
         ),
         _buildNavItem(
+          icon: Icons.assignment_ind_outlined,
+          label: 'Instructor Applications',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('applications');
+          },
+        ),
+        _buildNavItem(
           icon: Icons.block_flipped,
+
           label: 'Banned Accounts',
           onTap: () {
             Navigator.pop(context);

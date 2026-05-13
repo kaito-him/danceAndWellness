@@ -58,4 +58,24 @@ class CourseService {
       throw Exception(e.response?.data?.toString() ?? 'Failed to load course details');
     }
   }
+
+  /// GET /api/courses/{id}/enrollments/count
+  Future<int> getEnrollmentCount(String courseId) async {
+    try {
+      final response = await _apiClient.dio.get('/courses/$courseId/enrollments/count');
+      return (response.data as num).toInt();
+    } on DioException catch (_) {
+      return 0;
+    }
+  }
+
+  /// GET /api/categories/{id}  — returns category name
+  Future<String> getCategoryName(String categoryId) async {
+    try {
+      final response = await _apiClient.dio.get('/categories/$categoryId');
+      return response.data['name'] as String? ?? '';
+    } on DioException catch (_) {
+      return '';
+    }
+  }
 }

@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
   // IMPORTANT: Update this based on your setup!
-  // 
+  //
   // For Android Emulator: http://10.0.2.2:8080/api
   // For Physical Device: http://192.168.1.248:8080/api
   // For iOS Simulator: http://localhost:8080/api
@@ -15,14 +15,14 @@ class ApiClient {
   // 4. Replace below with: http://192.168.1.100:8080/api
   //
   // MAKE SURE: Your phone and computer are on the SAME WiFi network!
-  
-  static const String baseUrl = 'http://192.168.1.83:8080/api';
-  
+
+  static const String baseUrl = 'http://192.168.1.120:8080/api';
+
   /// Helper to convert backend paths (like /api/files/...) to full URLs
   static String formatMediaUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http')) return path;
-    
+
     // Get the base without /api
     final base = baseUrl.replaceFirst('/api', '');
     return '$base$path';
@@ -37,9 +37,7 @@ class ApiClient {
         baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       ),
     );
 

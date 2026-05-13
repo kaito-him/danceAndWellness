@@ -136,6 +136,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(java.util.List.of("http://localhost:5173"));
         config.setAllowedMethods(java.util.List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(java.util.List.of("*"));
+        config.setExposedHeaders(java.util.List.of("Content-Range", "Accept-Ranges", "Content-Length", "Content-Disposition"));
         config.setAllowCredentials(true);
         var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

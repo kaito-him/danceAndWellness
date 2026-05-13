@@ -10,8 +10,8 @@
     <application
         android:label="Dance &amp; Wellness"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-        android:usesCleartextTraffic="true"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
