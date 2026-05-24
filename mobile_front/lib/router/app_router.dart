@@ -12,6 +12,7 @@ import '../screens/forgot_password_screen.dart';
 import '../screens/verify_reset_code_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/notification_screen.dart';
+import '../screens/student/student_course_detail_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -111,6 +112,12 @@ class AppRouter {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: '/student/course/:courseId',
+        builder: (context, state) => StudentCourseDetailScreen(
+          courseId: state.pathParameters['courseId']!,
+        ),
       ),
     ],
   );

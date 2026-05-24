@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/course.dart';
 import '../../models/notification_model.dart';
@@ -389,7 +390,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
 
   Widget _buildCourseCard(Course course) {
     return Card(
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => context.push('/student/course/${course.courseId}'),
+        child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
@@ -453,6 +457,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
             const Icon(Icons.chevron_right, color: AppTheme.primaryGold),
           ],
         ),
+      ),
       ),
     );
   }

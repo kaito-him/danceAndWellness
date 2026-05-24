@@ -1,4 +1,5 @@
 import 'lesson.dart';
+import 'quiz.dart';
 
 class Course {
   final String courseId;
@@ -13,6 +14,7 @@ class Course {
   final CourseInstructor? instructor;
   final int lessonCount;
   final List<Lesson> lessons;
+  final List<Quiz> quizzes;
   final String? archivedAt;
   final String? archiveReason;
 
@@ -29,6 +31,7 @@ class Course {
     this.instructor,
     this.lessonCount = 0,
     this.lessons = const [],
+    this.quizzes = const [],
     this.archivedAt,
     this.archiveReason,
   });
@@ -54,6 +57,9 @@ class Course {
           : null,
       lessonCount: lessonsList.length,
       lessons: lessonsList,
+      quizzes: (json['quizzes'] as List<dynamic>?)
+          ?.map((e) => Quiz.fromJson(e))
+          .toList() ?? <Quiz>[],
       archivedAt: json['archivedAt']?.toString(),
       archiveReason: json['archiveReason'],
     );
