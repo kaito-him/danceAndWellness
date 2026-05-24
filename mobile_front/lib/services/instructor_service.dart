@@ -52,4 +52,53 @@ class InstructorDashboardService {
       return 0;
     }
   }
+
+  /// POST /api/files/upload — upload a file and return its URL
+  Future<String> uploadFile(String filePath, String fileName) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final response = await _apiClient.dio.post(
+        '/files/upload',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return response.data['url'] as String;
+    } on DioException catch (e) {
+      throw Exception(
+          e.response?.data?.toString() ?? 'Failed to upload file');
+    }
+  }
+
+  /// GET /api/instructor/payments/{instructorId}/status
+  Future<Map<String, dynamic>?> getStripeStatus(String instructorId) async {
+    try {
+      final response = await _apiClient.dio
+          .get('/instructor/payments/$instructorId/status');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (_) {
+      return null;
+    }
+  }
+
+  /// POST /api/courses — publish a course
+  Future<void> publishCourse(Map<String, dynamic> payload) async {
+    try {
+      await _apiClient.dio.post('/courses', data: payload);
+    } on DioException catch (e) {
+      throw Exception(
+          e.response?.data?.toString() ?? 'Failed to publish course');
+    }
+  }
+
+  /// POST /api/courses/draft — save a draft
+  Future<void> saveDraft(Map<String, dynamic> payload) async {
+    try {
+      await _apiClient.dio.post('/courses/draft', data: payload);
+    } on DioException catch (e) {
+      throw Exception(
+          e.response?.data?.toString() ?? 'Failed to save draft');
+    }
+  }
 }
