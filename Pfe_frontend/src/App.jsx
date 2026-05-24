@@ -11,6 +11,7 @@ import StudentSignup from "../src/components/StudentSignup";
 import InstructorSignup from "../src/components/InstructorSignup";
 import CoursesPage from "./components/Coursespage";
 import CheckoutPage from "./components/CheckoutPage";
+import AboutPage from "./components/AboutPage";
 
 function App() {
   const instructorsRef = useRef(null);
@@ -24,6 +25,7 @@ function App() {
         <Route path="/signup" element={<RoleSelection />} />
         <Route path="/signup/student" element={<StudentSignup />} />
         <Route path="/signup/instructor" element={<InstructorSignup />} />
+        <Route path="/about" element={<AboutPage />} />
 
         {/* ── Courses (Public Catalog only) ── */}
         <Route path="/courses" element={<CoursesPage />} />

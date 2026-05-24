@@ -12,6 +12,7 @@ import 'admin_payments_tab.dart';
 import 'admin_management_tabs.dart';
 import 'admin_search_tab.dart';
 import 'admin_instructor_applications_tab.dart';
+import 'admin_statistics_tab.dart';
 
 
 class AdminHomeScreen extends StatefulWidget {
@@ -53,6 +54,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         _selectedIndex = 0; // Courses tab
       } else if (section == 'applications') {
         _selectedIndex = 0; // Doesn't matter as subSection overrides
+      } else if (section == 'stats') {
+        _selectedIndex = 0;
       }
     });
 
@@ -74,6 +77,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     const AdminBadgesTab(),
     const AdminCategoriesTab(),
     const AdminInstructorApplicationsTab(),
+    const AdminStatisticsTab(),
   ];
 
 
@@ -120,7 +124,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
       body: IndexedStack(
-        index: _subSection == 'badges' ? 5 : (_subSection == 'categories' ? 6 : (_subSection == 'applications' ? 7 : _selectedIndex)),
+        index: _subSection == 'badges' ? 5 : (_subSection == 'categories' ? 6 : (_subSection == 'applications' ? 7 : (_subSection == 'stats' ? 8 : _selectedIndex))),
         children: _tabs,
       ),
 
@@ -185,6 +189,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 'badges': return 'Manage Badges';
       case 'categories': return 'Manage Categories';
       case 'applications': return 'Instructor Applications';
+      case 'stats': return 'Platform Statistics';
       default: return 'Admin Management';
 
     }

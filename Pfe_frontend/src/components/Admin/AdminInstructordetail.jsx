@@ -21,9 +21,9 @@ import "../../styles/AdminInstructorDetail.css";
 const BASE_URL = "http://localhost:8080";
 
 const STATUS_MAP = {
-  ACTIVE:   { label: "Active",   cls: "aid-status--active"   },
+  ACTIVE: { label: "Active", cls: "aid-status--active" },
   INACTIVE: { label: "Inactive", cls: "aid-status--inactive" },
-  PENDING:  { label: "Pending",  cls: "aid-status--pending"  },
+  PENDING: { label: "Pending", cls: "aid-status--pending" },
 };
 
 export default function AdminInstructorDetail({ instructor, onBack, onCourseClick, onHighlight, onBan, onUnban }) {
@@ -122,20 +122,20 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
             <div className="ai-card-dropdown aid-dropdown">
               {instructor.accountStatus === 'ACTIVE' && (
                 <button className="ai-card-dropdown-item"
-                        onClick={(e) => handleMenuAction(e, onHighlight)}>
+                  onClick={(e) => handleMenuAction(e, onHighlight)}>
                   <FiStar size={13} />
                   {instructor.featured ? "Remove Highlight" : "Highlight Instructor"}
                 </button>
               )}
               {instructor.accountStatus === 'INACTIVE' ? (
-                <button className="ai-card-dropdown-item" 
-                        onClick={(e) => handleMenuAction(e, onUnban)}
-                        style={{ color: '#22783c' }}>
+                <button className="ai-card-dropdown-item"
+                  onClick={(e) => handleMenuAction(e, onUnban)}
+                  style={{ color: '#22783c' }}>
                   <FiCheckCircle size={13} /> Unban Account
                 </button>
               ) : (
                 <button className="ai-card-dropdown-item ai-card-dropdown-item--danger"
-                        onClick={(e) => handleMenuAction(e, onBan)}>
+                  onClick={(e) => handleMenuAction(e, onBan)}>
                   <FiSlash size={13} /> Suspend Account
                 </button>
               )}
@@ -167,7 +167,7 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
 
           <div className="aid-hero-info">
             <h1 className="aid-name">{instructor.username}</h1>
-            <p  className="aid-specialty">{instructor.specialization ?? "Instructor"}</p>
+            <p className="aid-specialty">{instructor.specialization ?? "Instructor"}</p>
             {instructor.studioName && (
               <p className="aid-studio">🏢 {instructor.studioName}</p>
             )}
@@ -188,14 +188,14 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
 
         {/* ── Contact & links ── */}
         <div className="aid-hero-right">
-          <InfoRow icon={FiMail}     label="Email"  value={instructor.email} />
+          <InfoRow icon={FiMail} label="Email" value={instructor.email} />
           <InfoRow icon={FiCalendar} label="Joined" value={instructor.appliedAt} />
           {instructor.linkedIn && (
             <div className="aid-info-row">
               <span className="aid-info-icon"><FiLinkedin size={14} /></span>
               <span className="aid-info-label">LinkedIn</span>
               <a href={instructor.linkedIn} target="_blank" rel="noopener noreferrer"
-                 className="aid-info-link">View profile</a>
+                className="aid-info-link">View profile</a>
             </div>
           )}
           {instructor.website && (
@@ -203,7 +203,7 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
               <span className="aid-info-icon"><FiGlobe size={14} /></span>
               <span className="aid-info-label">Website</span>
               <a href={instructor.website} target="_blank" rel="noopener noreferrer"
-                 className="aid-info-link">Visit site</a>
+                className="aid-info-link">Visit site</a>
             </div>
           )}
           {certDownloadUrl && (
@@ -211,7 +211,7 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
               <span className="aid-info-icon"><FiAward size={14} /></span>
               <span className="aid-info-label">Cert.</span>
               <a href={certDownloadUrl} target="_blank" rel="noopener noreferrer"
-                 className="aid-info-link">
+                className="aid-info-link">
                 {instructor.certificationFileName ?? "View file"}
               </a>
             </div>
@@ -234,7 +234,7 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
             Courses
             <span className="aid-courses-count">{courses.length}</span>
           </h2>
-          
+
           <div className="aid-courses-filters">
             <div className="aid-search-wrap">
               <input
@@ -281,9 +281,9 @@ export default function AdminInstructorDetail({ instructor, onBack, onCourseClic
         ) : (
           <div className="aid-courses-grid">
             {filteredCourses.map((course) => (
-              <InstructorCourseCard 
-                key={course.courseId} 
-                course={course} 
+              <InstructorCourseCard
+                key={course.courseId}
+                course={course}
                 onClick={() => onCourseClick(course.courseId)}
               />
             ))}

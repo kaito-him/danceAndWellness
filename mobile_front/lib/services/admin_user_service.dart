@@ -68,4 +68,13 @@ class AdminUserService {
       throw Exception(e.response?.data?.toString() ?? 'Failed to load instructor courses');
     }
   }
+
+  Future<List<dynamic>> getStudentCourses(String studentId) async {
+    try {
+      final response = await _apiClient.dio.get('/students/$studentId/courses');
+      return response.data as List<dynamic>;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load student courses');
+    }
+  }
 }

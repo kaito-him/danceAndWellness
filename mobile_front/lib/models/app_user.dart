@@ -14,6 +14,7 @@ class AppUser {
   final String? yearsOfExperience;
   final String? linkedIn;
   final String? website;
+  final String? studioName;
 
   // Student specific
   final String? lastLoginDate;
@@ -34,6 +35,7 @@ class AppUser {
     this.yearsOfExperience,
     this.linkedIn,
     this.website,
+    this.studioName,
     this.lastLoginDate,
     this.createdAt,
     this.badgeIds = const [],
@@ -54,6 +56,7 @@ class AppUser {
       yearsOfExperience: json['yearsOfExperience'],
       linkedIn: json['linkedIn'],
       website: json['website'],
+      studioName: json['studioName'],
       lastLoginDate: json['lastLoginDate'],
       createdAt: json['createdAt'],
       badgeIds: json['badgeIds'] != null ? List<String>.from(json['badgeIds']) : [],

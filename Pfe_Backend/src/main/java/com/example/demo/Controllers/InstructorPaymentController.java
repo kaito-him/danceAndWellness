@@ -40,6 +40,17 @@ public class InstructorPaymentController {
     }
 
     /**
+     * GET /api/instructor/payments/{instructorId}/dashboard
+     * Creates a login link to the Stripe Express dashboard.
+     */
+    @GetMapping("/{instructorId}/dashboard")
+    public ResponseEntity<Map<String, String>> dashboard(
+            @PathVariable String instructorId) throws StripeException {
+        String url = paymentService.createLoginLink(instructorId);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
+    /**
      * GET /api/instructor/payments/{instructorId}/enrollments
      * Returns all enrollments for the instructor's courses with student & course details.
      */

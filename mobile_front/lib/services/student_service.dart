@@ -51,4 +51,29 @@ class StudentService {
           e.response?.data?.toString() ?? 'Failed to load badges');
     }
   }
+
+  /// GET /api/recommendations/student/{studentId}
+  Future<List<Course>> getRecommendations(String studentId, {int topN = 10}) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/recommendations/student/$studentId',
+        queryParameters: {'topN': topN},
+      );
+      final list = response.data as List<dynamic>;
+      return list.map((e) {
+        return Course(
+          courseId: (e['course_id'] ?? e['courseId'] ?? '').toString(),
+          title: e['title'] ?? '',
+          isFree: e['is_free'] ?? e['isFree'] ?? false,
+          price: (e['price'] as num?)?.toDouble(),
+          level: e['level'],
+          categoryId: e['category'],
+          lessonCount: e['lesson_count'] ?? e['lessonCount'] ?? 0,
+        );
+      }).toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load recommendations');
+    }
+  }
 }
+

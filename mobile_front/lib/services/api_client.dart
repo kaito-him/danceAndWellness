@@ -16,7 +16,7 @@ class ApiClient {
   //
   // MAKE SURE: Your phone and computer are on the SAME WiFi network!
 
-  static const String baseUrl = 'http://192.168.1.120:8080/api';
+  static const String baseUrl = 'http://192.168.1.124:8080/api';
 
   /// Helper to convert backend paths (like /api/files/...) to full URLs
   static String formatMediaUrl(String? path) {

@@ -3,6 +3,7 @@ package com.example.demo.dto;
 import com.example.demo.entities.AccountStatus;
 import lombok.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -36,6 +37,8 @@ public class InstructorDTO {
 
     // ── Metadata ───────────────────────────────────────────────────────────
     private LocalDate appliedAt;
+    private LocalDate createdAt;
+    private LocalDateTime lastLoginDate;
 
     // ── Stats (extend when a points/reward system is added) ────────────────
     private int points;

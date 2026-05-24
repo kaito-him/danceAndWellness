@@ -1,31 +1,38 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import '../../providers/auth_provider.dart';
 import '../../services/user_service.dart';
+import '../../services/instructor_service.dart';
 import '../../utils/app_theme.dart';
+import '../../services/api_client.dart';
 
-class AdminProfileTab extends StatefulWidget {
-  const AdminProfileTab({super.key});
+class InstructorProfileScreen extends StatefulWidget {
+  const InstructorProfileScreen({super.key});
 
   @override
-  State<AdminProfileTab> createState() => _AdminProfileTabState();
+  State<InstructorProfileScreen> createState() => _InstructorProfileScreenState();
 }
 
-class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProviderStateMixin {
+class _InstructorProfileScreenState extends State<InstructorProfileScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _userService = UserService();
+  final _instructorService = InstructorDashboardService();
 
-  // controllers
-  final _usernameCtrl  = TextEditingController();
-  final _emailCtrl     = TextEditingController();
-  final _currentPwCtrl = TextEditingController();
-  final _newPwCtrl     = TextEditingController();
-  final _confirmPwCtrl = TextEditingController();
+  final _usernameCtrl       = TextEditingController();
+  final _emailCtrl          = TextEditingController();
+  final _currentPwCtrl      = TextEditingController();
+  final _newPwCtrl          = TextEditingController();
+  final _confirmPwCtrl      = TextEditingController();
+  final _bioCtrl          = TextEditingController();
+  final _specializationCtrl = TextEditingController();
+  final _experienceCtrl     = TextEditingController();
+  final _studioCtrl         = TextEditingController();
+  final _linkedinCtrl       = TextEditingController();
+  final _websiteCtrl        = TextEditingController();
 
-  // state
   bool _isEditing   = false;
   bool _hideCurrent = true;
   bool _hideNew     = true;
@@ -44,7 +51,6 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  // ── Theme Colors ───────────────────────────────────────────────────────────
   static const Color _background = Color(0xFFEDE8DE);
   static const Color _cardBg     = Color(0xFFF9F7F2);
   static const Color _gold       = Color(0xFFB89C4D);
@@ -57,11 +63,8 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeAnim  = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _loadProfile();
@@ -75,24 +78,40 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
     _currentPwCtrl.dispose();
     _newPwCtrl.dispose();
     _confirmPwCtrl.dispose();
+    _bioCtrl.dispose();
+    _specializationCtrl.dispose();
+    _experienceCtrl.dispose();
+    _studioCtrl.dispose();
+    _linkedinCtrl.dispose();
+    _websiteCtrl.dispose();
     super.dispose();
   }
 
+  // ── Load ───────────────────────────────────────────────────────────────────
   Future<void> _loadProfile() async {
     setState(() => _loading = true);
     try {
       final data = await _userService.getMe();
-      _originalUsername = data['username'] ?? '';
-      _originalEmail    = data['email'] ?? '';
-      _usernameCtrl.text = _originalUsername;
-      _emailCtrl.text    = _originalEmail;
+      _originalUsername      = data['username'] ?? '';
+      _originalEmail         = data['email'] ?? '';
+      _usernameCtrl.text     = _originalUsername;
+      _emailCtrl.text        = _originalEmail;
+
+      final auth = context.read<AuthProvider>();
+      if (auth.userId != null) {
+        final instructorData = await _instructorService.getProfileByUserId(auth.userId!);
+        _bioCtrl.text            = instructorData.bio ?? '';
+        _specializationCtrl.text = instructorData.specialization ?? '';
+        _experienceCtrl.text     = instructorData.yearsOfExperience ?? '';
+        _studioCtrl.text         = instructorData.studioName ?? '';
+        _linkedinCtrl.text       = instructorData.linkedIn ?? '';
+        _websiteCtrl.text        = instructorData.website ?? '';
+      }
 
       final photoId = data['photo'];
       if (photoId != null && photoId.toString().isNotEmpty) {
         final bytes = await _userService.getPhotoBytes(photoId.toString());
-        if (mounted && bytes != null) {
-          setState(() => _photoBytes = Uint8List.fromList(bytes));
-        }
+        if (mounted && bytes != null) setState(() => _photoBytes = Uint8List.fromList(bytes));
       }
     } catch (e) {
       if (mounted) _showToast('Failed to load profile.', isError: true);
@@ -104,6 +123,7 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
     }
   }
 
+  // ── Photo ──────────────────────────────────────────────────────────────────
   void _showPhotoOptions() {
     showModalBottomSheet(
       context: context,
@@ -120,13 +140,9 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
             Container(
               width: 36, height: 4,
               margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
             ),
-            const Text('Profile Photo',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark)),
+            const Text('Profile Photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark)),
             const SizedBox(height: 24),
             _sheetTile(Icons.cloud_upload_outlined, 'Upload New Photo', () {
               Navigator.pop(context);
@@ -206,6 +222,7 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
     }
   }
 
+  // ── Submit ─────────────────────────────────────────────────────────────────
   Future<void> _submit() async {
     setState(() => _fieldErrors = {});
     if (!_formKey.currentState!.validate()) return;
@@ -216,40 +233,74 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
       setState(() => _fieldErrors['confirmPassword'] = 'Passwords do not match.');
       return;
     }
-    final changedUsername = _usernameCtrl.text.trim() != _originalUsername ? _usernameCtrl.text.trim() : null;
-    final changedEmail = _emailCtrl.text.trim() != _originalEmail ? _emailCtrl.text.trim() : null;
+
+    final auth = context.read<AuthProvider>();
+    if (auth.userId == null) {
+      _showToast('Could not identify user. Please log in again.', isError: true);
+      return;
+    }
+
+    String? instructorId;
+    try {
+      final profile = await _instructorService.getProfileByUserId(auth.userId!);
+      instructorId = profile.id;
+    } catch (_) {}
+
+    if (instructorId == null) {
+      _showToast('Could not load instructor profile.', isError: true);
+      return;
+    }
+
+    final changedUsername = _usernameCtrl.text.trim() != _originalUsername
+        ? _usernameCtrl.text.trim() : null;
+    final changedEmail = _emailCtrl.text.trim() != _originalEmail
+        ? _emailCtrl.text.trim() : null;
+
     setState(() => _saving = true);
     try {
-      final result = await _userService.updateMe(
+      // 1. Update instructor fields (username, email, studioName, linkedIn, website)
+      final result = await _instructorService.updateInstructorProfile(
+        instructorId: instructorId,
         currentPassword: currentPw,
-        username:    changedUsername,
-        email:       changedEmail,
-        newPassword: newPw.isNotEmpty ? newPw : null,
+        username: changedUsername,
+        email: changedEmail,
+        studioName: _studioCtrl.text.trim().isEmpty ? null : _studioCtrl.text.trim(),
+        linkedIn:   _linkedinCtrl.text.trim().isEmpty ? null : _linkedinCtrl.text.trim(),
+        website:    _websiteCtrl.text.trim().isEmpty ? null : _websiteCtrl.text.trim(),
+        bio:        _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
       );
-      final newUsername = result['username'] ?? _originalUsername;
-      final newEmail    = result['email']    ?? _originalEmail;
-      final newToken    = result['token'];
-      if (mounted) {
-        final auth = context.read<AuthProvider>();
-        await auth.updateAuthData(
-          token: (newToken != null && newToken.toString().isNotEmpty) ? newToken.toString() : null,
-          username: newUsername,
-        );
+
+      // 2. Password change via generic user endpoint (instructor PATCH doesn't handle it)
+      if (newPw.isNotEmpty) {
+        await _userService.updateMe(currentPassword: currentPw, newPassword: newPw);
       }
+
+      // 3. Only update auth when token/username actually changed.
+      //    Unconditional updateAuthData calls notifyListeners() → GoRouter rebuilds
+      //    → InstructorMainLayout resets _selectedIndex to 0 (Courses tab).
+      final newToken   = result['token'] as String?;
+      final newUsername = changedUsername ?? _originalUsername;
+      if (mounted) {
+        if (newToken != null && newToken.isNotEmpty) {
+          await auth.updateAuthData(token: newToken, username: newUsername);
+        } else if (changedUsername != null) {
+          await auth.updateAuthData(username: newUsername);
+        }
+      }
+
       _originalUsername = newUsername;
-      _originalEmail    = newEmail;
-      _usernameCtrl.text = newUsername;
-      _emailCtrl.text    = newEmail;
+      _originalEmail    = changedEmail ?? _originalEmail;
       _currentPwCtrl.clear();
       _newPwCtrl.clear();
       _confirmPwCtrl.clear();
+
       if (mounted) {
         setState(() => _isEditing = false);
         _showToast('Profile updated successfully.');
         _loadProfile();
       }
     } catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
+      final msg   = e.toString().replaceFirst('Exception: ', '');
       final lower = msg.toLowerCase();
       if (mounted) {
         if (lower.contains('password')) {
@@ -336,33 +387,31 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
     ));
   }
 
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _gold));
 
-    final initials = _originalUsername.isNotEmpty ? _originalUsername.substring(0, 1).toUpperCase() : 'A';
+    final initials = _originalUsername.isNotEmpty ? _originalUsername.substring(0, 1).toUpperCase() : 'I';
 
-    return Scaffold(
-      backgroundColor: _background,
-      body: FadeTransition(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: FadeTransition(
         opacity: _fadeAnim,
         child: SlideTransition(
           position: _slideAnim,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                _buildProfileHeader(initials),
-                const SizedBox(height: 40),
-                _buildSectionHeader('ACCOUNT INFO'),
-                const SizedBox(height: 12),
-                _buildAccountInfoCard(),
-                const SizedBox(height: 32),
-                _buildSignOutButton(),
-                const SizedBox(height: 40),
-              ],
-            ),
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              _buildProfileHeader(initials),
+              const SizedBox(height: 40),
+              _buildSectionHeader('PROFILE INFO'),
+              const SizedBox(height: 12),
+              _buildMergedProfileCard(),
+              const SizedBox(height: 32),
+              _buildSignOutButton(),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
       ),
@@ -409,9 +458,9 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.shield_outlined, size: 14, color: _gold),
+              Icon(Icons.school_outlined, size: 14, color: _gold),
               SizedBox(width: 6),
-              Text('Admin', style: TextStyle(color: _gold, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('Instructor', style: TextStyle(color: _gold, fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
         ),
@@ -436,7 +485,7 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
     );
   }
 
-  Widget _buildAccountInfoCard() {
+  Widget _buildMergedProfileCard() {
     if (_isEditing) {
       return Form(
         key: _formKey,
@@ -445,27 +494,31 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _buildField(
-                controller: _usernameCtrl,
-                label: 'Username',
-                icon: Icons.person_outline,
-                error: _fieldErrors['username'],
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Username is required.' : null,
-              ),
+              _buildField(controller: _usernameCtrl, label: 'Username', icon: Icons.person_outline,
+                  error: _fieldErrors['username'],
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Username is required.' : null),
               const SizedBox(height: 16),
-              _buildField(
-                controller: _emailCtrl,
-                label: 'Email Address',
-                icon: Icons.mail_outline,
-                keyboardType: TextInputType.emailAddress,
-                error: _fieldErrors['email'],
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Email is required.';
-                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(v)) return 'Invalid email address.';
-                  return null;
-                },
-              ),
+              _buildField(controller: _emailCtrl, label: 'Email Address', icon: Icons.mail_outline,
+                  keyboardType: TextInputType.emailAddress,
+                  error: _fieldErrors['email'],
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Email is required.';
+                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(v)) return 'Invalid email address.';
+                    return null;
+                  }),
               const SizedBox(height: 16),
+              _buildField(controller: _bioCtrl, label: 'Bio', icon: Icons.description_outlined, maxLines: 3, keyboardType: TextInputType.multiline),
+              const SizedBox(height: 16),
+              _buildField(controller: _specializationCtrl, label: 'Specialization', icon: Icons.psychology_outlined, enabled: false),
+              const SizedBox(height: 16),
+              _buildField(controller: _experienceCtrl, label: 'Experience', icon: Icons.history_edu_rounded, enabled: false),
+              const SizedBox(height: 16),
+              _buildField(controller: _studioCtrl, label: 'Studio Name', icon: Icons.apartment_rounded),
+              const SizedBox(height: 16),
+              _buildField(controller: _linkedinCtrl, label: 'LinkedIn', icon: Icons.link_rounded),
+              const SizedBox(height: 16),
+              _buildField(controller: _websiteCtrl, label: 'Website', icon: Icons.language_rounded),
+              const SizedBox(height: 24),
               _buildField(
                 controller: _currentPwCtrl,
                 label: 'Current Password',
@@ -524,6 +577,12 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
         children: [
           _buildInfoRow(Icons.person_outline, 'Username', _originalUsername, isFirst: true),
           _buildInfoRow(Icons.mail_outline, 'Email', _originalEmail),
+          _buildInfoRow(Icons.description_outlined, 'Bio', _bioCtrl.text.isEmpty ? 'Not set' : _bioCtrl.text),
+          _buildInfoRow(Icons.psychology_outlined, 'Specialization', _specializationCtrl.text.isEmpty ? 'Not set' : _specializationCtrl.text),
+          _buildInfoRow(Icons.history_edu_rounded, 'Experience', _experienceCtrl.text.isEmpty ? 'Not set' : _experienceCtrl.text),
+          _buildInfoRow(Icons.apartment_rounded, 'Studio Name', _studioCtrl.text.isEmpty ? 'Not set' : _studioCtrl.text),
+          _buildInfoRow(Icons.link_rounded, 'LinkedIn', _linkedinCtrl.text.isEmpty ? 'Not set' : _linkedinCtrl.text),
+          _buildInfoRow(Icons.language_rounded, 'Website', _websiteCtrl.text.isEmpty ? 'Not set' : _websiteCtrl.text),
           _buildInfoRow(Icons.lock_outline, 'Change Password', null, isLast: true),
         ],
       ),
@@ -533,7 +592,10 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
   Widget _buildInfoRow(IconData icon, String label, String? value, {bool isFirst = false, bool isLast = false}) {
     return InkWell(
       onTap: value == null ? _showChangePasswordDialog : null,
-      borderRadius: BorderRadius.vertical(top: isFirst ? const Radius.circular(24) : Radius.zero, bottom: isLast ? const Radius.circular(24) : Radius.zero),
+      borderRadius: BorderRadius.vertical(
+        top: isFirst ? const Radius.circular(24) : Radius.zero,
+        bottom: isLast ? const Radius.circular(24) : Radius.zero,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
@@ -573,10 +635,7 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
         onSuccess: (newToken) async {
           if (!mounted) return;
           if (newToken != null && newToken.isNotEmpty) {
-            await context.read<AuthProvider>().updateAuthData(
-              token: newToken,
-              username: _originalUsername,
-            );
+            await context.read<AuthProvider>().updateAuthData(token: newToken, username: _originalUsername);
           }
           _showToast('Password changed successfully.');
         },
@@ -590,7 +649,11 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -603,21 +666,37 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
     );
   }
 
-  Widget _buildField({required TextEditingController controller, required String label, required IconData icon, bool enabled = true, TextInputType keyboardType = TextInputType.text, bool obscureText = false, Widget? suffixIcon, String? error, String? hint, String? Function(String?)? validator}) {
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool enabled = true,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    String? error,
+    String? hint,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
       enabled: enabled,
       validator: validator,
+      maxLines: maxLines,
       onChanged: (_) => setState(() => _fieldErrors = {}),
       style: const TextStyle(color: _textDark, fontSize: 14.5, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
-        labelText: label, hintText: hint,
+        labelText: label,
+        hintText: hint,
         labelStyle: TextStyle(color: enabled ? _gold : _textMid, fontSize: 13.5, fontWeight: FontWeight.w500),
         prefixIcon: Icon(icon, size: 19, color: enabled ? _gold : _textMid),
-        suffixIcon: suffixIcon, errorText: error,
-        filled: true, fillColor: enabled ? Colors.white : Colors.grey[100],
+        suffixIcon: suffixIcon,
+        errorText: error,
+        filled: true,
+        fillColor: enabled ? Colors.white : Colors.grey[100],
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: const BorderSide(color: Color(0xFFE2D9C8))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: const BorderSide(color: _gold, width: 1.8)),
@@ -626,10 +705,10 @@ class _AdminProfileTabState extends State<AdminProfileTab> with SingleTickerProv
   }
 }
 
+// ── Password Dialog ────────────────────────────────────────────────────────────
 class _PasswordDialog extends StatefulWidget {
   final UserService userService;
   final Future<void> Function(String? newToken) onSuccess;
-
   const _PasswordDialog({required this.userService, required this.onSuccess});
 
   @override
@@ -637,10 +716,10 @@ class _PasswordDialog extends StatefulWidget {
 }
 
 class _PasswordDialogState extends State<_PasswordDialog> {
-  final _formKey      = GlobalKey<FormState>();
-  final _currentCtrl  = TextEditingController();
-  final _newCtrl      = TextEditingController();
-  final _confirmCtrl  = TextEditingController();
+  final _formKey     = GlobalKey<FormState>();
+  final _currentCtrl = TextEditingController();
+  final _newCtrl     = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
   bool _hideCurrent = true;
   bool _hideNew     = true;
@@ -651,6 +730,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
 
   static const Color _gold     = Color(0xFFB89C4D);
   static const Color _textDark = Color(0xFF1C2126);
+  static const Color _textMid  = Color(0xFF5E6266);
   static const Color _errorRed = Color(0xFFD92D20);
 
   @override
@@ -664,21 +744,15 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   Future<void> _submit() async {
     setState(() => _errors = {});
     if (!_formKey.currentState!.validate()) return;
-
-    final currentPw = _currentCtrl.text;
-    final newPw     = _newCtrl.text;
-    final confirmPw = _confirmCtrl.text;
-
-    if (newPw != confirmPw) {
+    if (_newCtrl.text != _confirmCtrl.text) {
       setState(() => _errors['confirmPassword'] = 'Passwords do not match.');
       return;
     }
-
     setState(() => _saving = true);
     try {
       final result = await widget.userService.updateMe(
-        currentPassword: currentPw,
-        newPassword: newPw,
+        currentPassword: _currentCtrl.text,
+        newPassword: _newCtrl.text,
       );
       final newToken = result['token'] as String?;
       if (mounted) {
@@ -720,19 +794,11 @@ class _PasswordDialogState extends State<_PasswordDialog> {
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
             ),
-            const Text(
-              'Change Password',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark),
-            ),
+            const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark)),
             const SizedBox(height: 24),
-
-            // Current password
             _buildField(
-              controller: _currentCtrl,
-              label: 'Current Password',
-              icon: Icons.lock_outline,
-              obscureText: _hideCurrent,
-              error: _errors['currentPassword'],
+              controller: _currentCtrl, label: 'Current Password', icon: Icons.lock_outline,
+              obscureText: _hideCurrent, error: _errors['currentPassword'],
               suffixIcon: IconButton(
                 icon: Icon(_hideCurrent ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
                 onPressed: () => setState(() => _hideCurrent = !_hideCurrent),
@@ -740,14 +806,9 @@ class _PasswordDialogState extends State<_PasswordDialog> {
               validator: (v) => (v == null || v.isEmpty) ? 'Current password is required.' : null,
             ),
             const SizedBox(height: 16),
-
-            // New password
             _buildField(
-              controller: _newCtrl,
-              label: 'New Password',
-              icon: Icons.lock_reset,
-              obscureText: _hideNew,
-              error: _errors['newPassword'],
+              controller: _newCtrl, label: 'New Password', icon: Icons.lock_reset,
+              obscureText: _hideNew, error: _errors['newPassword'],
               suffixIcon: IconButton(
                 icon: Icon(_hideNew ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
                 onPressed: () => setState(() => _hideNew = !_hideNew),
@@ -759,27 +820,19 @@ class _PasswordDialogState extends State<_PasswordDialog> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Confirm password
             _buildField(
-              controller: _confirmCtrl,
-              label: 'Confirm New Password',
-              icon: Icons.lock_outline,
-              obscureText: _hideConfirm,
-              error: _errors['confirmPassword'],
+              controller: _confirmCtrl, label: 'Confirm New Password', icon: Icons.lock_outline,
+              obscureText: _hideConfirm, error: _errors['confirmPassword'],
               suffixIcon: IconButton(
                 icon: Icon(_hideConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
                 onPressed: () => setState(() => _hideConfirm = !_hideConfirm),
               ),
               validator: (v) => (v == null || v.isEmpty) ? 'Please confirm your new password.' : null,
             ),
-
-            // General error (e.g. server error not related to a specific field)
             if (_errors['general'] != null) ...[
               const SizedBox(height: 10),
               Text(_errors['general']!, style: const TextStyle(color: _errorRed, fontSize: 13)),
             ],
-
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -789,12 +842,12 @@ class _PasswordDialogState extends State<_PasswordDialog> {
                   backgroundColor: _gold,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: _saving
                     ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Save Password', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : const Text('Change Password', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ),
           ],
@@ -817,22 +870,18 @@ class _PasswordDialogState extends State<_PasswordDialog> {
       obscureText: obscureText,
       validator: validator,
       onChanged: (_) => setState(() => _errors = {}),
+      style: const TextStyle(color: _textDark, fontSize: 14.5),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(color: _gold, fontSize: 13.5),
         prefixIcon: Icon(icon, size: 19, color: _gold),
         suffixIcon: suffixIcon,
         errorText: error,
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: Color(0xFFE2D9C8)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: _gold, width: 1.8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: const BorderSide(color: Color(0xFFE2D9C8))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: const BorderSide(color: _gold, width: 1.8)),
       ),
     );
   }

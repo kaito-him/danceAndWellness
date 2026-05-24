@@ -75,8 +75,6 @@ public class CourseService {
                 });
             }
         }
-
-        // Both free and paid courses publish immediately
         course.setStatus(CourseStatus.PUBLISHED);
         return false; // No admin review needed
     }
@@ -137,12 +135,10 @@ public class CourseService {
      * Instructor must have an active Stripe account for paid courses.
      */
     public Course addCourse(Course course) {
-        validatePublishable(course);
-        applyPublishRules(course); // Always publishes immediately now
-
+        validatePublishable(course); // at least one lesson with media.
+        applyPublishRules(course); // Always publishes immediately, must connect a Stripe account before publishing paid courses.
         course.setCreatedAt(LocalDateTime.now());
         Course saved = courseRepository.save(course);
-
         // Notify all admins about the newly published course
         String instructorName = saved.getInstructor() != null
             ? getInstructorUsername(saved.getInstructor().getUserId())
@@ -153,7 +149,6 @@ public class CourseService {
             saved.getCourseId(),
             false
         );
-
         return saved;
     }
 

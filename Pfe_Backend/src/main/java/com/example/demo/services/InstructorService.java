@@ -194,6 +194,8 @@ public class InstructorService {
                 .certificationFileName(i.getCertificationFileName())
                 .certificationFileType(i.getCertificationFileType())
                 .appliedAt(i.getAppliedAt())
+                .createdAt(user != null ? user.getCreatedAt() : null)
+                .lastLoginDate(user != null ? user.getLastLoginDate() : null)
                 .points(0)
                 .totalCourses((int) courseCount)
                 .build();

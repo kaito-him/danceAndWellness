@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../models/course.dart';
@@ -27,6 +27,21 @@ String _timeAgo(String? dateStr) {
     return '${diff.inDays ~/ 365}y ago';
   } catch (_) {
     return '';
+  }
+}
+
+String _formatDetailDate(dynamic raw) {
+  if (raw == null) return 'Unknown';
+  if (raw is List) {
+    if (raw.length >= 3) {
+      return '${raw[2]}/${raw[1]}/${raw[0]}';
+    }
+  }
+  try {
+    final date = DateTime.parse(raw.toString());
+    return '${date.day}/${date.month}/${date.year}';
+  } catch (_) {
+    return raw.toString();
   }
 }
 
@@ -209,6 +224,9 @@ class _AdminCourseDetailScreenState extends State<AdminCourseDetailScreen>
             color: AppTheme.pureWhite),
         onPressed: () => Navigator.pop(context),
       ),
+      actions: [
+        _buildThreeDots(course),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: course.thumbnailUrl != null
             ? Image.network(
@@ -227,6 +245,137 @@ class _AdminCourseDetailScreenState extends State<AdminCourseDetailScreen>
               ),
       ),
     );
+  }
+
+  Widget _buildThreeDots(Course course) {
+    final bool isArchived = course.archivedAt != null;
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert_rounded, color: AppTheme.pureWhite),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (val) {
+        if (val == 'archive') {
+          _initiateArchive(course);
+        } else if (val == 'unarchive') {
+          _initiateUnarchive(course);
+        }
+      },
+      itemBuilder: (_) => [
+        if (!isArchived)
+          const PopupMenuItem(
+            value: 'archive',
+            child: Row(
+              children: [
+                Icon(Icons.archive_outlined, size: 18, color: AppTheme.errorGold),
+                SizedBox(width: 10),
+                Text('Archive Course', style: TextStyle(color: AppTheme.errorGold)),
+              ],
+            ),
+          ),
+        if (isArchived)
+          const PopupMenuItem(
+            value: 'unarchive',
+            child: Row(
+              children: [
+                Icon(Icons.unarchive_outlined, size: 18, color: Colors.green),
+                SizedBox(width: 10),
+                Text('Unarchive Course', style: TextStyle(color: Colors.green)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _initiateArchive(Course course) async {
+    final reasonController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Archive Course'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Archive "${course.title}"?'),
+            const SizedBox(height: 6),
+            const Text(
+              'It will be removed from the public catalog.',
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            const Text('Reason *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(hintText: 'Explain to the instructor why...'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please provide a reason.'), backgroundColor: AppTheme.errorGold),
+                );
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGold),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await _courseService.archiveCourse(course.courseId, reasonController.text.trim());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Course archived successfully.'), backgroundColor: AppTheme.successGold),
+        );
+        _loadCourse();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to archive: ${e.toString()}'), backgroundColor: AppTheme.errorGold),
+        );
+      }
+    }
+  }
+
+  Future<void> _initiateUnarchive(Course course) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unarchive Course'),
+        content: Text('Restore "${course.title}" to the published catalog? The instructor will be notified.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await _courseService.unarchiveCourse(course.courseId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Course restored successfully.'), backgroundColor: AppTheme.successGold),
+        );
+        _loadCourse();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to restore: ${e.toString()}'), backgroundColor: AppTheme.errorGold),
+        );
+      }
+    }
   }
 
   Widget _buildHeaderSection(Course course) {
@@ -280,6 +429,65 @@ class _AdminCourseDetailScreenState extends State<AdminCourseDetailScreen>
             ),
           ],
         ),
+        if (course.archivedAt != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.red.shade100),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.archive_rounded, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'ARCHIVED COURSE',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'This course was removed from the public catalog by an administrator.',
+                  style: TextStyle(color: Colors.red.shade800, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Reason for archiving:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.red),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  course.archiveReason ?? 'No reason provided.',
+                  style: TextStyle(
+                    color: Colors.red.shade900,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Date: ${_formatDetailDate(course.archivedAt)}',
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Text(
           course.title,

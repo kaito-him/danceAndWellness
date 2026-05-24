@@ -120,7 +120,9 @@ public class InstructorPaymentService {
         Map<String, String> courseTitles = myCourses.stream()
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseIdIn(courseIds);
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseIdIn(courseIds).stream()
+                .filter(e -> Enrollment.EnrollmentType.PAID.equals(e.getType()))
+                .collect(Collectors.toList());
 
         return enrollments.stream().map(e -> {
             InstructorEnrollmentRow row = new InstructorEnrollmentRow();
@@ -160,7 +162,9 @@ public class InstructorPaymentService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId).stream()
+                .filter(e -> Enrollment.EnrollmentType.PAID.equals(e.getType()))
+                .collect(Collectors.toList());
 
         return enrollments.stream().map(e -> {
             InstructorEnrollmentRow row = new InstructorEnrollmentRow();
@@ -194,9 +198,6 @@ public class InstructorPaymentService {
         }).collect(Collectors.toList());
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 4. Stripe account status for the UI
-    // ══════════════════════════════════════════════════════════════════════
     public Map<String, Object> getAccountStatus(String instructorId) throws StripeException {
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new RuntimeException("Instructor not found"));
@@ -212,6 +213,25 @@ public class InstructorPaymentService {
             result.put("detailsSubmitted", account.getDetailsSubmitted());
         }
         return result;
+    }
+
+    /**
+     * Creates a login link for the Stripe Express dashboard.
+     */
+    public String createLoginLink(String instructorId) throws StripeException {
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+
+        String accountId = instructor.getStripeAccountId();
+        if (accountId == null || accountId.isBlank()) {
+            throw new RuntimeException("No Stripe account found for this instructor.");
+        }
+
+        com.stripe.model.LoginLink loginLink = com.stripe.model.LoginLink.createOnAccount(
+            accountId,
+            (com.stripe.net.RequestOptions) null
+        );
+        return loginLink.getUrl();
     }
 
     public List<InstructorEnrollmentRow> getEnrollmentsByUserId(String userId) {

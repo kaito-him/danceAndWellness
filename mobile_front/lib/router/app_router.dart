@@ -4,14 +4,17 @@ import '../models/user_role.dart';
 import '../screens/login_screen.dart';
 import '../screens/student/student_registration_screen.dart';
 import '../screens/instructor/instructor_application_screen.dart';
-import '../screens/student/student_home_screen.dart';
+import '../screens/student/student_main_layout.dart';
 import '../screens/instructor/instructor_home_screen.dart';
+import '../screens/instructor/instructor_main_layout.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/verify_reset_code_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/notification_screen.dart';
+import '../screens/instructor/instructor_drafts_screen.dart';
+import '../screens/instructor/instructor_archived_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -82,11 +85,20 @@ class AppRouter {
       ),
       GoRoute(
         path: '/student/home',
-        builder: (context, state) => const StudentHomeScreen(),
+        builder: (context, state) => const StudentMainLayout(),
       ),
+
       GoRoute(
         path: '/instructor/home',
-        builder: (context, state) => const InstructorHomeScreen(),
+        builder: (context, state) => const InstructorMainLayout(),
+      ),
+      GoRoute(
+        path: '/instructor/drafts',
+        builder: (context, state) => const InstructorDraftsScreen(),
+      ),
+      GoRoute(
+        path: '/instructor/archived',
+        builder: (context, state) => const InstructorArchivedScreen(),
       ),
       GoRoute(
         path: '/admin/home',

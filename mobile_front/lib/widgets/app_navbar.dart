@@ -8,12 +8,14 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showNotification;
   final Widget? leading;
+  final PreferredSizeWidget? bottom;
 
   const AppNavbar({
     super.key,
     required this.title,
     this.showNotification = true,
     this.leading,
+    this.bottom,
   });
 
   @override
@@ -23,6 +25,7 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       centerTitle: true,
       leading: leading,
+      bottom: bottom,
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -34,12 +37,16 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
             errorBuilder: (context, error, stackTrace) => const Icon(Icons.star, color: Colors.white),
           ),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+          Flexible(
+            child: Text(
+              title,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ],
@@ -85,5 +92,5 @@ class AppNavbar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
 }

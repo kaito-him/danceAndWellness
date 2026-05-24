@@ -7,13 +7,22 @@ import '../../models/instructor_profile.dart';
 import '../../models/notification_model.dart';
 import '../../services/instructor_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/api_client.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/app_navbar.dart';
 import '../../widgets/app_drawer.dart';
 import '../../providers/notification_provider.dart';
+import '../../widgets/course_editor_bottom_sheet.dart';
+import '../../widgets/course_details_bottom_sheet.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:dio/dio.dart' as dio_pkg;
 
 class InstructorHomeScreen extends StatefulWidget {
-  const InstructorHomeScreen({super.key});
+  final TabController? tabController;
+  const InstructorHomeScreen({super.key, this.tabController});
 
   @override
   State<InstructorHomeScreen> createState() => _InstructorHomeScreenState();
@@ -24,7 +33,6 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
   final _instructorService = InstructorDashboardService();
   final _notifService = NotificationApiService();
 
-  late TabController _tabController;
 
   InstructorProfile? _profile;
   List<Course> _publishedCourses = [];
@@ -32,6 +40,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
   Map<String, int> _enrollmentCounts = {};
   List<NotificationModel> _notifications = [];
   int _unreadCount = 0;
+  List<Map<String, dynamic>> _categories = [];
 
   bool _loading = true;
   String? _error;
@@ -39,13 +48,11 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadAll();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -65,6 +72,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         _instructorService.getDraftCourses(),
         _notifService.getNotifications(),
         _notifService.getUnreadCount(),
+        _instructorService.getCategories(),
       ]);
 
       if (!mounted) return;
@@ -89,6 +97,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         _enrollmentCounts = counts;
         _notifications = results[3] as List<NotificationModel>;
         _unreadCount = results[4] as int;
+        _categories = results[5] as List<Map<String, dynamic>>;
         _loading = false;
       });
     } catch (e) {
@@ -105,38 +114,25 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryGold));
+    }
+
+    if (_error != null) {
+      return _buildError();
+    }
 
     return Scaffold(
-      backgroundColor: AppTheme.pageBackground,
-      appBar: const AppNavbar(title: 'Instructor Dashboard'),
-      drawer: const AppDrawer(),
-      bottomNavigationBar: Container(
-        color: AppTheme.primaryGold,
-        child: TabBar(
-          controller: _tabController,
-          indicatorColor: AppTheme.pureWhite,
-          labelColor: AppTheme.pureWhite,
-          unselectedLabelColor: AppTheme.pureWhite.withValues(alpha: 0.6),
-          tabs: const [
-            Tab(icon: Icon(Icons.dashboard_outlined), text: 'Overview'),
-            Tab(icon: Icon(Icons.menu_book_outlined), text: 'Courses'),
-            Tab(icon: Icon(Icons.notifications_outlined), text: 'Alerts'),
-          ],
-        ),
+      backgroundColor: Colors.transparent,
+      body: _buildCoursesTab(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddCourseDialog(),
+        backgroundColor: AppTheme.primaryGold,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Course', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryGold))
-          : _error != null
-              ? _buildError()
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOverviewTab(),
-                    _buildCoursesTab(),
-                    _buildNotificationsTab(),
-                  ],
-                ),
     );
   }
 
@@ -176,6 +172,30 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _sectionTitle('Dashboard'),
+                ElevatedButton.icon(
+                  onPressed: _showAddCourseDialog,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text(
+                    'Add Course',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGold,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             _buildProfileCard(),
             const SizedBox(height: 20),
             _buildStatsRow(),
@@ -338,131 +358,558 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
 
   // ── Courses Tab ────────────────────────────────────────────────────────────
   Widget _buildCoursesTab() {
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          const TabBar(
-            indicatorColor: AppTheme.primaryGold,
-            labelColor: AppTheme.primaryGold,
-            unselectedLabelColor: AppTheme.textSecondary,
-            tabs: [
-              Tab(text: 'Published'),
-              Tab(text: 'Drafts'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _courseList(_publishedCourses, showEnrollments: true),
-                _courseList(_draftCourses, showEnrollments: false),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    final paidCourses = _publishedCourses.where((c) => !c.isFree).toList();
+    final freeCourses = _publishedCourses.where((c) => c.isFree).toList();
 
-  Widget _courseList(List<Course> courses, {required bool showEnrollments}) {
-    if (courses.isEmpty) {
-      return _emptyState(
-        showEnrollments ? 'No published courses' : 'No drafts',
-        Icons.menu_book_outlined,
-      );
-    }
     return RefreshIndicator(
       color: AppTheme.primaryGold,
       onRefresh: _loadAll,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: courses.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) =>
-            _buildCourseCard(courses[i], showEnrollments: showEnrollments),
-      ),
-    );
-  }
-
-  Widget _buildCourseCard(Course course,
-      {required bool showEnrollments}) {
-    final enrollments = _enrollmentCounts[course.courseId] ?? 0;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.paleGold,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.menu_book_outlined,
-                      color: AppTheme.primaryGold, size: 26),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(course.title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: AppTheme.textPrimary),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          _chip(course.level ?? 'N/A',
-                              AppTheme.primaryGold.withValues(alpha: 0.15),
-                              AppTheme.primaryGold),
-                          const SizedBox(width: 6),
-                          _chip(
-                              course.isFree
-                                  ? 'Free'
-                                  : '\$${course.price?.toStringAsFixed(0)}',
-                              AppTheme.paleGold,
-                              AppTheme.darkGold),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            // ── Paid Courses ───────────────────────────────────────────────
+            _buildCourseSection(
+              title: 'Paid Courses',
+              icon: Icons.attach_money_rounded,
+              courses: paidCourses,
+              emptyMessage: 'No paid courses yet',
             ),
-            if (showEnrollments) ...[
-              const SizedBox(height: 10),
-              const Divider(height: 1),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.people_outline,
-                      size: 16, color: AppTheme.textSecondary),
-                  const SizedBox(width: 6),
-                  Text('$enrollments student${enrollments == 1 ? '' : 's'} enrolled',
-                      style: const TextStyle(
-                          fontSize: 13, color: AppTheme.textSecondary)),
-                  const Spacer(),
-                  const Icon(Icons.video_library_outlined,
-                      size: 16, color: AppTheme.textSecondary),
-                  const SizedBox(width: 4),
-                  Text('${course.lessonCount} lessons',
-                      style: const TextStyle(
-                          fontSize: 13, color: AppTheme.textSecondary)),
-                ],
+            const SizedBox(height: 28),
+
+            // ── Free Courses ───────────────────────────────────────────────
+            _buildCourseSection(
+              title: 'Free Courses',
+              icon: Icons.card_giftcard_rounded,
+              courses: freeCourses,
+              emptyMessage: 'No free courses yet',
+            ),
+
+            // ── Drafts ─────────────────────────────────────────────────────
+            if (_draftCourses.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              _buildCourseSection(
+                title: 'Drafts',
+                icon: Icons.edit_note_outlined,
+                courses: _draftCourses,
+                emptyMessage: 'No drafts',
+                isDraft: true,
               ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildCourseSection({
+    required String title,
+    required IconData icon,
+    required List<Course> courses,
+    required String emptyMessage,
+    bool isDraft = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: AppTheme.paleGold,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 16, color: AppTheme.primaryGold),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.paleGold,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${courses.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.darkGold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Horizontal scroll list
+        if (courses.isEmpty)
+          Container(
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppTheme.paleGold,
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 32, color: AppTheme.primaryGold.withValues(alpha: 0.4)),
+                  const SizedBox(height: 8),
+                  Text(
+                    emptyMessage,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 200,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: courses.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (_, i) {
+                final course = courses[i];
+                return _buildCourseCard(
+                  course,
+                  showEnrollments: !isDraft,
+                  onTap: () {
+                    if (isDraft) {
+                      _showAddCourseDialog(editCourse: course);
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCourseCard(Course course, {required bool showEnrollments, VoidCallback? onTap}) {
+    final enrollments = _enrollmentCounts[course.courseId] ?? 0;
+    final thumbUrl = course.thumbnailUrl != null && course.thumbnailUrl!.isNotEmpty
+        ? ApiClient.formatMediaUrl(course.thumbnailUrl)
+        : null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 220,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGold.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: AppTheme.paleGold),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Thumbnail
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: thumbUrl != null
+                    ? Image.network(
+                        thumbUrl,
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _courseThumbnailPlaceholder(),
+                      )
+                    : _courseThumbnailPlaceholder(),
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.35),
+                    shape: BoxShape.circle,
+                  ),
+                  child: PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(
+                      Icons.more_vert_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showAddCourseDialog(editCourse: course);
+                      } else if (value == 'archive') {
+                        _confirmArchiveCourse(course);
+                      } else if (value == 'delete') {
+                        _confirmDeleteDraft(course);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: AppTheme.textPrimary),
+                            SizedBox(width: 8),
+                            Text('Edit / View'),
+                          ],
+                        ),
+                      ),
+                      if (course.status == 'DRAFT')
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                              SizedBox(width: 8),
+                              Text('Delete Draft', style: TextStyle(color: Colors.redAccent)),
+                            ],
+                          ),
+                        )
+                      else
+                        const PopupMenuItem<String>(
+                          value: 'archive',
+                          child: Row(
+                            children: [
+                              Icon(Icons.archive_outlined, size: 18, color: Colors.redAccent),
+                              SizedBox(width: 8),
+                              Text('Archive', style: TextStyle(color: Colors.redAccent)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    course.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppTheme.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      _chip(
+                        course.level ?? 'N/A',
+                        AppTheme.primaryGold.withValues(alpha: 0.12),
+                        AppTheme.primaryGold,
+                      ),
+                      const SizedBox(width: 5),
+                      _chip(
+                        course.isFree
+                            ? 'Free'
+                            : '\$${course.price?.toStringAsFixed(0)}',
+                        AppTheme.paleGold,
+                        AppTheme.darkGold,
+                      ),
+                    ],
+                  ),
+                  if (showEnrollments) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.people_outline,
+                            size: 13, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$enrollments enrolled',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.play_circle_outline,
+                            size: 13, color: AppTheme.textSecondary),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${course.lessonCount}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+            ],
+          ),
+        ),
+      ),
+      ],
+      ),
+      ),
+    );
+  }
+
+  Future<void> _confirmArchiveCourse(Course course) async {
+    final enrollments = _enrollmentCounts[course.courseId] ?? 0;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.archive_outlined, color: AppTheme.primaryGold, size: 24),
+            SizedBox(width: 8),
+            Text('Archive Course'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to archive "${course.title}"?\n\n'
+          'This will remove it from the public catalog. '
+          '${!course.isFree && enrollments > 0 ? "\n\nWarning: Paid courses with active enrollments cannot be archived." : ""}'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGold,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _instructorService.archiveCourseByInstructor(course.courseId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Course archived successfully!'), backgroundColor: Colors.green),
+        );
+        _loadAll();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to archive course: ${e.toString().replaceFirst('Exception: ', '')}'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteDraft(Course course) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Colors.red, size: 24),
+            SizedBox(width: 8),
+            Text('Delete Draft'),
+          ],
+        ),
+        content: const Text('Are you sure you want to permanently delete this draft course? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _instructorService.deleteCourse(course.courseId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Draft deleted successfully!'), backgroundColor: Colors.green),
+        );
+        _loadAll();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete draft: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Widget _courseThumbnailPlaceholder() {
+    return Container(
+      height: 100,
+      width: double.infinity,
+      color: AppTheme.paleGold,
+      child: const Icon(
+        Icons.menu_book_outlined,
+        color: AppTheme.primaryGold,
+        size: 36,
+      ),
+    );
+  }
+
+  void _showAddCourseDialog({Course? editCourse}) {
+    if (editCourse != null) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => CourseDetailsBottomSheet(
+          editCourse: editCourse,
+          categories: _categories,
+          onSaved: _loadAll,
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => CourseEditorBottomSheet(
+          categories: _categories,
+          onSaved: _loadAll,
+        ),
+      );
+    }
+  }
+
+  void _showSnackBar(BuildContext context, String msg, Color bg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: bg));
+  }
+
+  InputDecoration _inputDeco(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: AppTheme.primaryGold, size: 20),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppTheme.primaryGold, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  Widget _dialogSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+    );
+  }
+
+  Future<String> _uploadFile(File file) async {
+    final fileName = file.path.split('/').last;
+    final ext = fileName.split('.').last.toLowerCase();
+    
+    String type = 'image';
+    if (['mp4', 'mov', 'webm', 'avi'].contains(ext)) type = 'video';
+
+    final formData = dio_pkg.FormData.fromMap({
+      'file': await dio_pkg.MultipartFile.fromFile(
+        file.path,
+        filename: fileName,
+        contentType: MediaType(type, ext == 'jpg' ? 'jpeg' : ext),
+      ),
+    });
+
+    final apiClient = ApiClient();
+    final response = await apiClient.dio.post('/api/files/upload', data: formData);
+    return response.data['url'] as String;
+  }
+
+  Future<void> _createFullCourse({
+    required String title,
+    required String description,
+    required String level,
+    required String? categoryId,
+    required bool isFree,
+    required double price,
+    required String thumbnailUrl,
+    required List<dynamic> lessons,
+    required List<dynamic> quizzes,
+    bool isDraft = false,
+  }) async {
+    final apiClient = ApiClient();
+    final path = isDraft ? '/courses/draft' : '/courses';
+    await apiClient.dio.post(path, data: {
+      'title': title,
+      'description': description,
+      'level': level,
+      'categoryId': categoryId,
+      'isFree': isFree,
+      'price': price,
+      'thumbnailUrl': thumbnailUrl,
+      'lessons': lessons,
+      'quizzes': quizzes,
+    });
+  }
+
+  Future<void> _createCourse({
+    required String title,
+    required String description,
+    required String level,
+    required bool isFree,
+    double? price,
+  }) async {
+    final apiClient = ApiClient();
+    await apiClient.dio.post('/courses', data: {
+      'title': title,
+      if (description.isNotEmpty) 'description': description,
+      'level': level,
+      'isFree': isFree,
+      if (!isFree && price != null) 'price': price,
+    });
   }
 
   Widget _chip(String label, Color bg, Color fg) {
@@ -606,3 +1053,4 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         ),
       );
 }
+

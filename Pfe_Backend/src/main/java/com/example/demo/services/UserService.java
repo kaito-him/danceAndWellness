@@ -52,24 +52,20 @@ public class UserService {
     // registerInstructor
     public void registerInstructor(InstructorSignupRequest req, MultipartFile certFile)
             throws Exception {
-
         if (userRepository.findByUsername(req.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username already taken.");
         }
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already registered.");
         }
-
         // Persist User
         User user = new User(req.getUsername(), req.getEmail(),
                 passwordEncoder.encode(req.getPassword()));
         user.setRole("INSTRUCTOR");
         user.setStatus(AccountStatus.PENDING);
         userRepository.save(user);
-
         // Store certification file in GridFS
         String certFileId = fileStorageService.store(certFile);
-
         // Persist Instructor profile
         Instructor instructor = Instructor.builder()
                 .userId(user.getUserId())
@@ -84,10 +80,8 @@ public class UserService {
                 .certificationFileId(certFileId)
                 .featured(false)
                 .build();
-
         instructorRepository.save(instructor);
         emailService.sendInstructorWelcomeEmail(user.getEmail(), user.getUsername());
-
         // Notify all admins about the new instructor application
         notificationService.notifyAllAdmins(
             "New instructor application from \"" + user.getUsername() + "\" is awaiting review.",
@@ -102,20 +96,16 @@ public class UserService {
     public LoginResponse login(LoginRequest req) {
         User user = userRepository.findByUsername(req.getUsername())
                 .orElse(null);
-
         if (user == null || !encoder.matches(req.getPassword(), user.getPasswordHash()))
             return new LoginResponse(false, null, null, "Incorrect username or password", null);
-
         if (user.getStatus() == AccountStatus.INACTIVE) {
             throw new AccountStatusException("INACTIVE");
         }
         if (user.getStatus() == AccountStatus.PENDING) {
             throw new AccountStatusException("PENDING");
         }
-
         user.setLastLoginDate(LocalDateTime.now());
         userRepository.save(user);
-
         if ("STUDENT".equals(user.getRole())) {
             studentRepository.findByUserId(user.getUserId()).ifPresent(student -> {
                 if (student.getLoginDates() == null) {
@@ -126,9 +116,7 @@ public class UserService {
                 badgeEvaluationService.evaluate(user.getUserId());
             });
         }
-
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-
         return new LoginResponse(true, user.getRole(), token, "Login successful", user.getUserId());
     }
 

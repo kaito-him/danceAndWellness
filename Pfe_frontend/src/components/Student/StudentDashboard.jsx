@@ -21,6 +21,7 @@ import MyCoursesPage from "./MyCoursesPage";
 import MySubscriptionPage from "./MySubscriptionPage";
 import StudentBadgesPage from "./StudentBadgesPage";
 import StudentProfilePage from "./StudentProfilePage";
+import StudentHelpPage from "./StudentHelpPage";
 
 import "../../styles/StudentDashboard.css";
 import "../../styles/StudentInstructors.css";
@@ -649,7 +650,7 @@ export default function StudentDashboard() {
             <Route path="messages" element={<StudentMessagesPage />} />
             <Route path="account" element={<MySubscriptionPage onCourseSelect={(id) => navigate(`/student/course/${id}`)} />} />
             <Route path="settings" element={<StudentProfilePage />} />
-            <Route path="help" element={<Placeholder Icon={FiHelpCircle} title="Help & Support" sub="FAQs and support resources will appear here." />} />
+            <Route path="help" element={<StudentHelpPage />} />
 
             <Route path="*" element={<Navigate to="/student/home" replace />} />
           </Routes>

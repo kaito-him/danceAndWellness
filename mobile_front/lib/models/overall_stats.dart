@@ -12,6 +12,7 @@ class OverallStats {
   final int paidEnrollments;
   final int freeEnrollments;
   final int totalRevenueCents;
+  final Map<String, int> coursesByCategory;
 
   OverallStats({
     required this.totalCourses,
@@ -27,9 +28,13 @@ class OverallStats {
     required this.paidEnrollments,
     required this.freeEnrollments,
     required this.totalRevenueCents,
+    required this.coursesByCategory,
   });
 
   factory OverallStats.fromJson(Map<String, dynamic> json) {
+    final coursesByCatRaw = json['coursesByCategory'] as Map<String, dynamic>? ?? {};
+    final coursesByCat = coursesByCatRaw.map((key, value) => MapEntry(key, value as int));
+
     return OverallStats(
       totalCourses: (json['totalCourses'] ?? 0) as int,
       publishedCourses: (json['publishedCourses'] ?? 0) as int,
@@ -45,6 +50,7 @@ class OverallStats {
       paidEnrollments: (json['paidEnrollments'] ?? 0) as int,
       freeEnrollments: (json['freeEnrollments'] ?? 0) as int,
       totalRevenueCents: (json['totalRevenueCents'] ?? 0) as int,
+      coursesByCategory: coursesByCat,
     );
   }
 

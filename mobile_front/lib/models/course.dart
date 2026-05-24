@@ -18,6 +18,7 @@ class Course {
   final List<Quiz> quizzes;
   final String? archivedAt;
   final String? archiveReason;
+  final bool archivedByAdmin;
 
   Course({
     required this.courseId,
@@ -36,6 +37,7 @@ class Course {
     this.quizzes = const [],
     this.archivedAt,
     this.archiveReason,
+    this.archivedByAdmin = false,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,7 @@ class Course {
       quizzes: quizzesList,
       archivedAt: json['archivedAt']?.toString(),
       archiveReason: json['archiveReason'],
+      archivedByAdmin: json['archivedByAdmin'] ?? false,
     );
   }
 }

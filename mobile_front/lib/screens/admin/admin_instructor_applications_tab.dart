@@ -350,6 +350,166 @@ class _AdminInstructorApplicationsTabState extends State<AdminInstructorApplicat
     );
   }
 
+  void _showApplicationDetails(InstructorProfile app) {
+    final dateFormat = DateFormat('MMM d, yyyy');
+    String appliedDateStr = '—';
+    if (app.appliedAt != null) {
+      if (app.appliedAt is List && app.appliedAt.length >= 3) {
+        appliedDateStr = dateFormat.format(DateTime(app.appliedAt[0], app.appliedAt[1], app.appliedAt[2]));
+      } else {
+        try {
+          appliedDateStr = dateFormat.format(DateTime.parse(app.appliedAt.toString()));
+        } catch (_) {}
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final isProcessing = _processingUserIds.contains(app.userId);
+          
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: Column(
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: AppTheme.mediumGray.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                
+                // Modal Header
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: [
+                      _buildAvatar(app),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(app.username, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary, fontFamily: 'Georgia')),
+                            Text(app.email, style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close_rounded, color: AppTheme.mediumGray)),
+                    ],
+                  ),
+                ),
+                
+                const Divider(height: 1),
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: _buildInfoBlock('Specialization', app.specialization ?? '—')),
+                            Expanded(child: _buildInfoBlock('Experience', app.yearsOfExperience ?? '—')),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        _buildInfoBlock('Studio Name', app.studioName ?? '—'),
+                        const SizedBox(height: 20),
+                        _buildInfoBlock('Applied On', appliedDateStr),
+
+                        if (app.bio != null && app.bio!.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          const Text('BIO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 1)),
+                          const SizedBox(height: 8),
+                          Text(app.bio!, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, height: 1.6)),
+                        ],
+
+                        const SizedBox(height: 24),
+                        const Text('RESOURCES & LINKS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 1)),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            if (app.linkedIn != null && app.linkedIn!.isNotEmpty)
+                              _buildExternalLink(Icons.link_rounded, 'LinkedIn', app.linkedIn!),
+                            if (app.website != null && app.website!.isNotEmpty)
+                              _buildExternalLink(Icons.language_rounded, 'Website', app.website!),
+                            if (app.certificationFileId != null)
+                              _buildFileLink(app),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Actions
+                Container(
+                  padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isProcessing ? null : () async {
+                            Navigator.pop(ctx);
+                            _handleDecline(app);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.errorGold,
+                            side: const BorderSide(color: AppTheme.errorGold, width: 1.5),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isProcessing ? null : () async {
+                            Navigator.pop(ctx);
+                            _handleApprove(app);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.successGold,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: isProcessing
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                              : const Text('Approve Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildApplicationCard(InstructorProfile app) {
     final dateFormat = DateFormat('MMM d, yyyy');
     String appliedDateStr = '—';
@@ -373,117 +533,37 @@ class _AdminInstructorApplicationsTabState extends State<AdminInstructorApplicat
           BoxShadow(color: AppTheme.primaryGold.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10)),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-            child: Row(
-              children: [
-                _buildAvatar(app),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(app.username,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textPrimary, fontFamily: 'Georgia')),
-                      Text(app.email, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+      child: InkWell(
+        onTap: () => _showApplicationDetails(app),
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              _buildAvatar(app),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('APPLIED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 0.5)),
-                    Text(appliedDateStr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryGold)),
+                    Text(app.username,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textPrimary, fontFamily: 'Georgia')),
+                    const SizedBox(height: 2),
+                    Text(app.email, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          const Divider(height: 1, color: Color(0xFFF0EAE0)),
-
-          // ── Info Grid ──
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _buildInfoBlock('Specialization', app.specialization ?? '—')),
-                    Expanded(child: _buildInfoBlock('Experience', app.yearsOfExperience ?? '—')),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildInfoBlock('Studio Name', app.studioName ?? '—'),
-
-                if (app.bio != null && app.bio!.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  const Text('BIO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 1)),
-                  const SizedBox(height: 6),
-                  Text(app.bio!, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.5)),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('APPLIED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 0.5)),
+                  const SizedBox(height: 2),
+                  Text(appliedDateStr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryGold)),
                 ],
-
-                const SizedBox(height: 20),
-                const Text('RESOURCES & LINKS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 1)),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    if (app.linkedIn != null && app.linkedIn!.isNotEmpty)
-                      _buildExternalLink(Icons.link_rounded, 'LinkedIn', app.linkedIn!),
-                    if (app.website != null && app.website!.isNotEmpty)
-                      _buildExternalLink(Icons.language_rounded, 'Website', app.website!),
-                    if (app.certificationFileId != null)
-                      _buildFileLink(app),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          // ── Actions ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _processingUserIds.contains(app.userId) ? null : () => _handleDecline(app),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.errorGold,
-                      side: const BorderSide(color: AppTheme.errorGold, width: 1.2),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _processingUserIds.contains(app.userId) ? null : () => _handleApprove(app),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.successGold,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: _processingUserIds.contains(app.userId)
-                        ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Approve Application', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -502,9 +582,19 @@ class _AdminInstructorApplicationsTabState extends State<AdminInstructorApplicat
   Widget _buildExternalLink(IconData icon, String label, String url) {
     return InkWell(
       onTap: () async {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        String formattedUrl = url.trim();
+        if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+          formattedUrl = 'https://$formattedUrl';
+        }
+        final uri = Uri.parse(formattedUrl);
+        try {
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            _showToast('Could not launch $formattedUrl', isError: true);
+          }
+        } catch (e) {
+          _showToast('Invalid URL format', isError: true);
         }
       },
       borderRadius: BorderRadius.circular(8),

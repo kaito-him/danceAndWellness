@@ -1,7 +1,11 @@
 /* src/styles/Checkout.css */
 .checkout-root {
   min-height: 100vh;
-  background: #f4f4f8;
+  background-color: #fcfbf9;
+  background-image: url('../assets/dance-wellness-bg.svg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;

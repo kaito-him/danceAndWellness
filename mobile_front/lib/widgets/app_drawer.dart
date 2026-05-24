@@ -37,7 +37,7 @@ class _AppDrawerState extends State<AppDrawer> {
       final data = await _userService.getMe();
       final photoId = data['photo'];
       if (photoId == null || photoId.toString().isEmpty) return;
-      if (_loadedPhotoId == photoId) return; // already loaded
+      if (_loadedPhotoId == photoId) return;
       setState(() => _loadingPhoto = true);
       final bytes = await _userService.getPhotoBytes(photoId.toString());
       if (mounted && bytes != null) {
@@ -58,7 +58,7 @@ class _AppDrawerState extends State<AppDrawer> {
     final auth = context.watch<AuthProvider>();
     final role = auth.role ?? UserRole.student;
     final username = auth.username ?? 'User';
-    final roleLabel = role.value; // e.g. "STUDENT", "INSTRUCTOR", "ADMIN"
+    final roleLabel = role.value;
 
     final initials = username.isNotEmpty
         ? username.substring(0, username.length >= 2 ? 2 : 1).toUpperCase()
@@ -99,6 +99,14 @@ class _AppDrawerState extends State<AppDrawer> {
                       child: Divider(color: AppTheme.mediumGray),
                     ),
                   ],
+
+                  if (role == UserRole.instructor) ...[
+                    _buildInstructorSection(context),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Divider(color: AppTheme.mediumGray),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -118,7 +126,6 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
           const SizedBox(height: 24),
         ],
-
       ),
     );
   }
@@ -133,11 +140,9 @@ class _AppDrawerState extends State<AppDrawer> {
   ) {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context); // close drawer
+        Navigator.pop(context);
         if (widget.onProfileTap != null) {
           widget.onProfileTap!();
-        } else {
-          // For student/instructor, push to a profile route (future)
         }
       },
       child: Container(
@@ -158,84 +163,88 @@ class _AppDrawerState extends State<AppDrawer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar
-            Stack(
-              children: [
-                Container(
-                  width: 66, height: 66,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white24,
-                    border: Border.all(color: Colors.white, width: 2),
+            // Avatar — no border, exact fit, matches profile screen
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  clipBehavior: Clip.hardEdge,
-                  child: _loadingPhoto
-                      ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : _photoBytes != null
-                          ? Image.memory(_photoBytes!, fit: BoxFit.cover)
-                          : Center(
+                ],
+              ),
+              child: ClipOval(
+                child: _loadingPhoto
+                    ? Container(
+                        color: Colors.white24,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        ),
+                      )
+                    : _photoBytes != null
+                        ? Image.memory(
+                            _photoBytes!,
+                            fit: BoxFit.cover,
+                            width: 72,
+                            height: 72,
+                          )
+                        : Container(
+                            color: Colors.white24,
+                            child: Center(
                               child: Text(
                                 initials,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 22,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                ),
-                // Small edit hint icon
-                Positioned(
-                  bottom: 0, right: 0,
-                  child: Container(
-                    width: 20, height: 20,
-                    decoration: const BoxDecoration(shape: BoxShape.circle, color: AppTheme.darkGold),
-                    child: const Icon(Icons.edit_rounded, size: 11, color: Colors.white),
-                  ),
-                ),
-              ],
+                          ),
+              ),
             ),
+
             const SizedBox(height: 14),
 
-            // Username
-            Text(
-              username,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-
-            // Role badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                roleLabel,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Tap-to-edit hint
+            // Username · Role on one line
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Icon(Icons.touch_app_outlined, size: 12, color: Colors.white60),
-                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    username,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: Colors.white60,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Text(
-                  'Tap to manage profile',
-                  style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 11),
+                  roleLabel,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
@@ -245,6 +254,7 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 
+  // ── Admin Section ──────────────────────────────────────────────────────────
   Widget _buildAdminSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,6 +272,14 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
         ),
         _buildNavItem(
+          icon: Icons.bar_chart_rounded,
+          label: 'Platform Statistics',
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSectionTap?.call('stats');
+          },
+        ),
+        _buildNavItem(
           icon: Icons.assignment_ind_outlined,
           label: 'Instructor Applications',
           onTap: () {
@@ -271,7 +289,6 @@ class _AppDrawerState extends State<AppDrawer> {
         ),
         _buildNavItem(
           icon: Icons.block_flipped,
-
           label: 'Banned Accounts',
           onTap: () {
             Navigator.pop(context);
@@ -314,6 +331,42 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 
+  Widget _buildInstructorSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Text(
+            'INSTRUCTOR',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        _buildNavItem(
+          icon: Icons.edit_note_outlined,
+          label: 'My Drafts',
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/instructor/drafts');
+          },
+        ),
+        _buildNavItem(
+          icon: Icons.archive_outlined,
+          label: 'Archived Courses',
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/instructor/archived');
+          },
+        ),
+      ],
+    );
+  }
+
   // ── Nav Item ───────────────────────────────────────────────────────────────
   Widget _buildNavItem({
     required IconData icon,
@@ -330,7 +383,8 @@ class _AppDrawerState extends State<AppDrawer> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: ListTile(
           leading: Container(
-            width: 38, height: 38,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: (color ?? AppTheme.primaryGold).withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
@@ -345,7 +399,9 @@ class _AppDrawerState extends State<AppDrawer> {
               fontSize: 15,
             ),
           ),
-          trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary, size: 18),
+          trailing: trailing ??
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppTheme.textSecondary, size: 18),
           contentPadding: EdgeInsets.zero,
           dense: true,
         ),
@@ -356,7 +412,10 @@ class _AppDrawerState extends State<AppDrawer> {
   // ── Unread badge ───────────────────────────────────────────────────────────
   Widget _buildUnreadBadge(BuildContext context) {
     final count = context.watch<NotificationProvider>().unreadCount;
-    if (count == 0) return const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary, size: 18);
+    if (count == 0) {
+      return const Icon(Icons.chevron_right_rounded,
+          color: AppTheme.textSecondary, size: 18);
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -365,7 +424,8 @@ class _AppDrawerState extends State<AppDrawer> {
       ),
       child: Text(
         count > 9 ? '9+' : '$count',
-        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+            color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -393,14 +453,15 @@ class _AppDrawerState extends State<AppDrawer> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              Navigator.pop(context); // close drawer
+              Navigator.pop(context);
               await auth.logout();
               if (context.mounted) context.go('/login');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorGold,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Sign Out'),
           ),

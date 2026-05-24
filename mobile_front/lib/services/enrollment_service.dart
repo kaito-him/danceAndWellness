@@ -112,4 +112,75 @@ class EnrollmentService {
       return null;
     }
   }
+
+  /// POST /api/enrollment/free
+  Future<void> enrollFree(String studentId, String courseId) async {
+    try {
+      await _apiClient.dio.post(
+        '/enrollment/free',
+        queryParameters: {
+          'studentId': studentId,
+          'courseId': courseId,
+        },
+      );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to enroll');
+    }
+  }
+
+  /// GET /api/enrollment/is-enrolled
+  Future<bool> isEnrolled(String studentId, String courseId) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/enrollment/is-enrolled',
+        queryParameters: {
+          'studentId': studentId,
+          'courseId': courseId,
+        },
+      );
+      return response.data['enrolled'] ?? false;
+    } on DioException catch (_) {
+      return false;
+    }
+  }
+
+  /// DELETE /api/enrollment/cancel-free
+  Future<void> cancelFreeEnrollment(String studentId, String courseId) async {
+    try {
+      await _apiClient.dio.delete(
+        '/enrollment/cancel-free',
+        queryParameters: {
+          'studentId': studentId,
+          'courseId': courseId,
+        },
+      );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to cancel enrollment');
+    }
+  }
+
+  /// POST /api/progress/update
+  Future<void> updateProgress({
+    required String studentId,
+    required String courseId,
+    required String lessonId,
+    required int watchedSeconds,
+    required int totalSeconds,
+  }) async {
+    try {
+      await _apiClient.dio.post(
+        '/progress/update',
+        data: {
+          'studentId': studentId,
+          'courseId': courseId,
+          'lessonId': lessonId,
+          'watchedSeconds': watchedSeconds,
+          'totalSeconds': totalSeconds,
+        },
+      );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to update progress');
+    }
+  }
 }
+
