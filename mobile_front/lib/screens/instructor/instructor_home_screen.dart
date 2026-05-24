@@ -11,6 +11,7 @@ import '../../utils/app_theme.dart';
 import '../../widgets/app_navbar.dart';
 import '../../widgets/app_drawer.dart';
 import '../../providers/notification_provider.dart';
+import 'add_course_screen.dart';
 
 class InstructorHomeScreen extends StatefulWidget {
   const InstructorHomeScreen({super.key});
@@ -110,6 +111,16 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
       backgroundColor: AppTheme.pageBackground,
       appBar: const AppNavbar(title: 'Instructor Dashboard'),
       drawer: const AppDrawer(),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppTheme.primaryGold,
+        onPressed: () async {
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const AddCourseScreen()),
+          );
+          if (result == true) _loadAll();
+        },
+        child: const Icon(Icons.add, color: AppTheme.pureWhite),
+      ),
       bottomNavigationBar: Container(
         color: AppTheme.primaryGold,
         child: TabBar(
