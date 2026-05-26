@@ -99,7 +99,30 @@ class EnrollmentService {
     }
   }
 
+  /// GET /progress/course — no ownership check, works for the enrolled student
+  Future<StudentProgress?> getStudentOwnProgress(
+      String studentId, String courseId) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/progress/course',
+        queryParameters: {'studentId': studentId, 'courseId': courseId},
+      );
+      // /progress/course returns a CourseProgress object directly (not wrapped)
+      final data = response.data as Map<String, dynamic>? ?? {};
+      return StudentProgress(
+        completionPercent:
+            (data['completionPercent'] as num?)?.toDouble() ?? 0.0,
+        completedLessons: (data['completedLessons'] as num?)?.toInt() ?? 0,
+        totalLessons: (data['totalLessons'] as num?)?.toInt() ?? 0,
+        lastUpdated: data['lastUpdated']?.toString(),
+      );
+    } on DioException catch (_) {
+      return null;
+    }
+  }
+
   /// GET /api/progress/instructor/student-course?studentId=&courseId=
+  /// Only works when the caller is the course instructor or an admin.
   Future<StudentProgress?> getStudentProgress(
       String studentId, String courseId) async {
     try {

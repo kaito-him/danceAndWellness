@@ -16,6 +16,28 @@ class StudentService {
     }
   }
 
+  /// GET /api/students/profile-stats/{userId}
+  Future<Map<String, dynamic>> getProfileStats(String userId) async {
+    try {
+      final response =
+          await _apiClient.dio.get('/students/profile-stats/$userId');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load profile stats');
+    }
+  }
+
+  /// GET /api/students/skill-level/{userId}
+  Future<Map<String, dynamic>> getSkillLevel(String userId) async {
+    try {
+      final response =
+          await _apiClient.dio.get('/students/skill-level/$userId');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load skill level');
+    }
+  }
+
   /// GET /api/students/{id}/courses
   Future<List<Course>> getStudentCourses(String studentId) async {
     try {
@@ -26,6 +48,32 @@ class StudentService {
     } on DioException catch (e) {
       throw Exception(
           e.response?.data?.toString() ?? 'Failed to load courses');
+    }
+  }
+
+  /// GET /api/students/{id}/courses/free
+  Future<List<Course>> getStudentFreeCourses(String studentId) async {
+    try {
+      final response =
+          await _apiClient.dio.get('/students/$studentId/courses/free');
+      final list = response.data as List<dynamic>;
+      return list.map((e) => Course.fromJson(e)).toList();
+    } on DioException catch (e) {
+      throw Exception(
+          e.response?.data?.toString() ?? 'Failed to load free courses');
+    }
+  }
+
+  /// GET /api/students/{id}/courses/paid
+  Future<List<Course>> getStudentPaidCourses(String studentId) async {
+    try {
+      final response =
+          await _apiClient.dio.get('/students/$studentId/courses/paid');
+      final list = response.data as List<dynamic>;
+      return list.map((e) => Course.fromJson(e)).toList();
+    } on DioException catch (e) {
+      throw Exception(
+          e.response?.data?.toString() ?? 'Failed to load paid courses');
     }
   }
 

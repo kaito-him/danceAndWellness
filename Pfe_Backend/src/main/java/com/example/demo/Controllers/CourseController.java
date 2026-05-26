@@ -65,6 +65,12 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getAllPublishedCourses());
     }
 
+    @GetMapping("/most-popular")
+    public ResponseEntity<List<Course>> getMostPopularCourses(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(courseService.getMostPopularCourses(limit));
+    }
+
     @GetMapping("/my-drafts")
     public ResponseEntity<List<Course>> getMyDraftCourses() {
         try {

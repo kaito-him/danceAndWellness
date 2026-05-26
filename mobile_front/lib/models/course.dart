@@ -51,21 +51,25 @@ class Course {
         ? quizzesJson.map((e) => Quiz.fromJson(e)).toList()
         : <Quiz>[];
 
+    // Use lesson_count from JSON if available, otherwise use lessons list length
+    final lessonCountFromJson = json['lesson_count'] ?? json['lessonCount'];
+    final quizCountFromJson = json['quiz_count'] ?? json['quizCount'];
+
     return Course(
-      courseId: json['courseId'] ?? '',
+      courseId: json['courseId'] ?? json['course_id'] ?? '',
       title: json['title'] ?? '',
-      isFree: json['isFree'] ?? false,
+      isFree: json['isFree'] ?? json['is_free'] ?? false,
       price: (json['price'] as num?)?.toDouble(),
       level: json['level'],
       status: json['status'],
-      thumbnailUrl: json['thumbnailUrl'],
-      categoryId: json['categoryId'],
+      thumbnailUrl: json['thumbnailUrl'] ?? json['thumbnail_url'],
+      categoryId: json['categoryId'] ?? json['category'],
       description: json['description'],
       instructor: json['instructor'] != null
           ? CourseInstructor.fromJson(json['instructor'])
           : null,
-      lessonCount: lessonsList.length,
-      quizCount: quizzesList.length,
+      lessonCount: lessonCountFromJson ?? lessonsList.length,
+      quizCount: quizCountFromJson ?? quizzesList.length,
       lessons: lessonsList,
       quizzes: quizzesList,
       archivedAt: json['archivedAt']?.toString(),

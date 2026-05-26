@@ -39,4 +39,19 @@ class Comment {
           : [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'commentId': commentId,
+      'courseId': courseId,
+      'authorId': authorId,
+      'authorUsername': authorUsername,
+      'authorRole': authorRole,
+      'authorPhoto': authorPhoto,
+      'content': content,
+      'createdAt': createdAt,
+      'parentCommentId': parentCommentId,
+      'likedByUserIds': likedByUserIds,
+    };
+  }
 }

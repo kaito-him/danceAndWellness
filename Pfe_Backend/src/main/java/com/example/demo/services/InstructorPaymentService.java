@@ -120,9 +120,7 @@ public class InstructorPaymentService {
         Map<String, String> courseTitles = myCourses.stream()
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseIdIn(courseIds).stream()
-                .filter(e -> Enrollment.EnrollmentType.PAID.equals(e.getType()))
-                .collect(Collectors.toList());
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseIdIn(courseIds);
 
         return enrollments.stream().map(e -> {
             InstructorEnrollmentRow row = new InstructorEnrollmentRow();
@@ -162,9 +160,7 @@ public class InstructorPaymentService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId).stream()
-                .filter(e -> Enrollment.EnrollmentType.PAID.equals(e.getType()))
-                .collect(Collectors.toList());
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
 
         return enrollments.stream().map(e -> {
             InstructorEnrollmentRow row = new InstructorEnrollmentRow();

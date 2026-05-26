@@ -63,4 +63,22 @@ class CommentService {
       throw Exception(e.response?.data?.toString() ?? 'Failed to delete comment');
     }
   }
+
+  /// POST /api/courses/{courseId}/comments/{commentId}/like
+  Future<void> likeComment(String courseId, String commentId) async {
+    try {
+      await _apiClient.dio.post('/courses/$courseId/comments/$commentId/like');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to like comment');
+    }
+  }
+
+  /// DELETE /api/courses/{courseId}/comments/{commentId}/like
+  Future<void> unlikeComment(String courseId, String commentId) async {
+    try {
+      await _apiClient.dio.delete('/courses/$courseId/comments/$commentId/like');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to unlike comment');
+    }
+  }
 }

@@ -284,5 +284,35 @@ class InstructorDashboardService {
           e.response?.data?.toString() ?? 'Failed to add reply');
     }
   }
-}
 
+  /// GET /api/students/by-user/{userId}
+  Future<Map<String, dynamic>> getStudentByUserId(String userId) async {
+    try {
+      final response = await _apiClient.dio.get('/students/by-user/$userId');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load student');
+    }
+  }
+
+  /// GET /api/users/{userId}
+  Future<Map<String, dynamic>> getUserInfo(String userId) async {
+    try {
+      final response = await _apiClient.dio.get('/users/$userId');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load user info');
+    }
+  }
+
+  /// GET /api/students/{studentId}/courses
+  Future<List<Map<String, dynamic>>> getStudentCourses(String studentId) async {
+    try {
+      final response = await _apiClient.dio.get('/students/$studentId/courses');
+      final list = response.data as List<dynamic>;
+      return list.cast<Map<String, dynamic>>();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load courses');
+    }
+  }
+}

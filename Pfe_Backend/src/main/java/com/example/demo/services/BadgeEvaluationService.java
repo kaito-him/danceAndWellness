@@ -14,9 +14,7 @@ import java.util.stream.Collectors;
  * Evaluates badge criteria for a student and awards badges when earned.
  * 
  * Badge criteria:
- *  - "Early Bird"      → Complete 5 lessons before 8:00 AM
  *  - "Streak Starter"  → Maintain a 7-day activity streak
- *  - "Monthly Master"  → Complete 20 courses in a single month
  *  - "Style Explorer"  → Enroll in courses of 5 different categories (dance styles)
  */
 @Service
@@ -58,9 +56,7 @@ public class BadgeEvaluationService {
             if (currentBadgeIds.contains(badge.getId())) continue; // already earned
 
             boolean earned = switch (badge.getName()) {
-                case "Early Bird"      -> checkEarlyBird(student);
                 case "Streak Starter"  -> checkStreakStarter(student);
-                case "Monthly Master"  -> checkMonthlyMaster(student);
                 case "Style Explorer"  -> checkStyleExplorer(student);
                 default -> false;
             };
@@ -85,16 +81,6 @@ public class BadgeEvaluationService {
         }
     }
 
-    /** Early Bird: Attend 5 lessons before 8:00 AM */
-    private boolean checkEarlyBird(Student student) {
-        List<LessonProgress> allProgress = lessonProgressRepository.findByStudentId(student.getUserId());
-        long earlyCount = allProgress.stream()
-            .filter(lp -> lp.getLastUpdated() != null)
-            .filter(lp -> lp.getLastUpdated().getHour() < 8)
-            .count();
-        return earlyCount >= 5;
-    }
-
     /** Streak Starter: 7 consecutive days of logging in */
     private boolean checkStreakStarter(Student student) {
         Set<java.time.LocalDate> loginDates = student.getLoginDates();
@@ -113,20 +99,6 @@ public class BadgeEvaluationService {
             }
         }
         return false;
-    }
-
-    /** Monthly Master: Complete 20 courses in a single month */
-    private boolean checkMonthlyMaster(Student student) {
-        List<CourseProgress> allCp = courseProgressRepository.findByStudentId(student.getUserId());
-        // Group completed courses by month
-        Map<String, Long> monthCounts = allCp.stream()
-            .filter(cp -> cp.getCompletionPercent() != null && cp.getCompletionPercent() >= 100.0)
-            .filter(cp -> cp.getLastUpdated() != null)
-            .collect(Collectors.groupingBy(
-                cp -> cp.getLastUpdated().getYear() + "-" + cp.getLastUpdated().getMonthValue(),
-                Collectors.counting()
-            ));
-        return monthCounts.values().stream().anyMatch(count -> count >= 20);
     }
 
     /** Style Explorer: Enroll in courses from 5 different categories (dance styles) */

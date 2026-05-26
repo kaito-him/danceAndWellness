@@ -5,7 +5,6 @@ import '../screens/login_screen.dart';
 import '../screens/student/student_registration_screen.dart';
 import '../screens/instructor/instructor_application_screen.dart';
 import '../screens/student/student_main_layout.dart';
-import '../screens/instructor/instructor_home_screen.dart';
 import '../screens/instructor/instructor_main_layout.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../screens/splash_screen.dart';
@@ -17,6 +16,8 @@ import '../screens/instructor/instructor_drafts_screen.dart';
 import '../screens/instructor/instructor_archived_screen.dart';
 import '../screens/instructor/instructor_course_detail_screen.dart';
 import '../screens/instructor/instructor_student_profile_screen.dart';
+import '../screens/student/student_course_detail_screen.dart';
+import '../screens/student/student_instructor_profile_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -88,6 +89,20 @@ class AppRouter {
       GoRoute(
         path: '/student/home',
         builder: (context, state) => const StudentMainLayout(),
+      ),
+      GoRoute(
+        path: '/student/course/:courseId',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return StudentCourseDetailScreen(courseId: courseId);
+        },
+      ),
+      GoRoute(
+        path: '/student/instructor/:instructorId',
+        builder: (context, state) {
+          final instructorId = state.pathParameters['instructorId']!;
+          return StudentInstructorProfileScreen(instructorId: instructorId);
+        },
       ),
 
       GoRoute(

@@ -171,6 +171,8 @@ export default function StudentProfilePage() {
   const [stats,      setStats]      = useState({
     enrollmentsCount: 0, paymentsCount: 0,
     loginStreak: 0,      categoriesWatched: 0,
+    totalWatchTime: 0,   completionRate: 0.0,
+    badgesCount: 0,
   });
   const [uploading,  setUploading]  = useState(false);
   const [loading,    setLoading]    = useState(true);

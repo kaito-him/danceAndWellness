@@ -29,7 +29,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     if (_user.role == 'INSTRUCTOR' && _user.id != null) {
       _fetchInstructorCourses();
     }
-    if (_user.role == 'STUDENT' && _user.id != null) {
+    if (_user.role == 'STUDENT' && _user.userId != null) {
       _fetchStudentCourses();
     }
   }
@@ -52,7 +52,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   Future<void> _fetchStudentCourses() async {
     setState(() => _loadingStudentCourses = true);
     try {
-      final courses = await _userService.getStudentCourses(_user.id!);
+      final courses = await _userService.getStudentCourses(_user.userId!);
       if (mounted) {
         setState(() {
           _studentCourses = courses;

@@ -71,4 +71,20 @@ public class StudentController {
                 ))
                 .orElseGet(() -> ResponseEntity.ok(Map.of("skillLevel", "Not set")));
     }
+
+    /**
+     * Returns the student's UserProfile stats (totalWatchTime, completionRate).
+     * GET /api/students/profile-stats/{userId}
+     */
+    @GetMapping("/profile-stats/{userId}")
+    public ResponseEntity<?> getProfileStats(@PathVariable String userId) {
+        return userProfileRepository.findByStudentId(userId)
+                .<ResponseEntity<?>>map(profile -> ResponseEntity.ok(
+                        Map.of(
+                            "totalWatchTime", profile.getTotalWatchTime() != null ? profile.getTotalWatchTime() : 0,
+                            "completionRate", profile.getCompletionRate() != null ? profile.getCompletionRate() : 0.0
+                        )
+                ))
+                .orElseGet(() -> ResponseEntity.ok(Map.of("totalWatchTime", 0, "completionRate", 0.0)));
+    }
 }

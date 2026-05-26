@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../models/course.dart';
@@ -32,6 +33,8 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
   bool _enrolled = false;
   StudentProgress? _progress;
   List<Map<String, dynamic>> _comments = [];
+  int _enrolledCount = 0;
+  String _categoryName = '';
 
   bool _loading = true;
   bool _enrolling = false;
@@ -65,7 +68,7 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
 
       StudentProgress? progress;
       if (enrolled) {
-        progress = await _enrollService.getStudentProgress(
+        progress = await _enrollService.getStudentOwnProgress(
           userId,
           widget.courseId,
         );
@@ -73,11 +76,22 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
 
       final comments = await _instructorService.getComments(widget.courseId);
 
+      // Fetch enrollment count and category name in parallel
+      final int enrolledCount =
+          await _courseService.getEnrollmentCount(course.courseId);
+      String categoryName = '';
+      if (course.categoryId != null && course.categoryId!.isNotEmpty) {
+        categoryName =
+            await _courseService.getCategoryName(course.categoryId!);
+      }
+
       setState(() {
         _course = course;
         _enrolled = enrolled;
         _progress = progress;
         _comments = comments;
+        _enrolledCount = enrolledCount;
+        _categoryName = categoryName;
         _loading = false;
       });
     } catch (e) {
@@ -88,7 +102,34 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
     }
   }
 
-  Future<void> _enroll() async {
+  
+  Widget _buildInstructorAvatar() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.paleGold,
+            AppTheme.primaryGold,
+          ],
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          _course!.instructor?.username?.toString().substring(0, 1).toUpperCase() ?? 'I',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+Future<void> _enroll() async {
     final userId = context.read<AuthProvider>().userId;
     if (userId == null || _course == null) return;
 
@@ -203,7 +244,9 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
     return pay ?? false;
   }
 
-  @override
+  
+
+ @override
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
@@ -327,6 +370,32 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+
+                  // Category + enrolled count row
+                  Row(
+                    children: [
+                      if (_categoryName.isNotEmpty) ...[
+                        const Icon(Icons.category_outlined,
+                            size: 14, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(
+                          _categoryName,
+                          style: const TextStyle(
+                              fontSize: 13, color: AppTheme.textSecondary),
+                        ),
+                        const SizedBox(width: 14),
+                      ],
+                      const Icon(Icons.people_outline,
+                          size: 14, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$_enrolledCount student${_enrolledCount == 1 ? '' : 's'} enrolled',
+                        style: const TextStyle(
+                            fontSize: 13, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     _course!.title,
@@ -336,23 +405,83 @@ class _StudentCourseDetailScreenState extends State<StudentCourseDetailScreen>
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.person_outline,
-                        size: 14,
-                        color: AppTheme.textSecondary,
+                  const SizedBox(height: 12),
+                  // Instructor section with clickable photo
+                  InkWell(
+                    onTap: () {
+                      if (_course!.instructor?.userId != null || _course!.instructor?.id != null) {
+                        final instructorId = _course!.instructor?.userId ?? _course!.instructor?.id;
+                        if (instructorId != null) {
+                          context.push('/student/instructor/$instructorId');
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.paleGold.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'By ${_course!.instructor?.username ?? 'Instructor'}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textSecondary,
-                        ),
+                      child: Row(
+                        children: [
+                          // Instructor photo
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.primaryGold.withOpacity(0.2),
+                            ),
+                            child: ClipOval(
+                              child: _course!.instructor?.photo != null
+                                  ? Image.network(
+                                      ApiClient.formatMediaUrl('/api/files/${_course!.instructor!.photo}'),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => _buildInstructorAvatar(),
+                                      loadingBuilder: (_, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return _buildInstructorAvatar();
+                                      },
+                                    )
+                                  : _buildInstructorAvatar(),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Instructor name and label
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Instructor',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _course!.instructor?.username ?? 'Instructor',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Chevron icon to indicate clickability
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -1044,4 +1173,5 @@ class _QuizPlayDialogState extends State<_QuizPlayDialog> {
       ),
     );
   }
+
 }

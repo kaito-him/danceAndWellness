@@ -16,6 +16,20 @@ class CourseService {
     }
   }
 
+  /// GET /api/courses/most-popular
+  Future<List<Course>> getMostPopularCourses({int limit = 10}) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/courses/most-popular',
+        queryParameters: {'limit': limit},
+      );
+      final list = response.data as List<dynamic>;
+      return list.map((e) => Course.fromJson(e)).toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load popular courses');
+    }
+  }
+
   /// GET /api/courses/admin-archived
   Future<List<Course>> getAdminArchivedCourses() async {
     try {

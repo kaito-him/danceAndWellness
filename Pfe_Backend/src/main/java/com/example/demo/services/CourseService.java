@@ -90,6 +90,29 @@ public class CourseService {
         });
         return courses;
     }
+
+    public List<Course> getMostPopularCourses(int limit) {
+        List<Course> allPublished = courseRepository.findByStatus(CourseStatus.PUBLISHED);
+        
+        // Sort by enrollment count (descending)
+        allPublished.sort((c1, c2) -> {
+            long count1 = enrollmentRepository.countByCourseId(c1.getCourseId());
+            long count2 = enrollmentRepository.countByCourseId(c2.getCourseId());
+            return Long.compare(count2, count1);
+        });
+        
+        // Set instructor usernames and limit results
+        List<Course> popular = allPublished.stream()
+                .limit(limit)
+                .peek(c -> {
+                    if (c.getInstructor() != null)
+                        c.getInstructor().setUsername(
+                                getInstructorUsername(c.getInstructor().getUserId()));
+                })
+                .collect(java.util.stream.Collectors.toList());
+        
+        return popular;
+    }
     
     public long getEnrollmentCount(String courseId) {
         // Optional: verify course exists

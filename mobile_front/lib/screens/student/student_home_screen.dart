@@ -6,6 +6,9 @@ import '../../models/course.dart';
 import '../../models/notification_model.dart';
 import '../../services/student_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/course_service.dart';
+import '../../services/enrollment_service.dart';
+import '../../services/api_client.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/app_navbar.dart';
 import '../../widgets/app_drawer.dart';
@@ -22,15 +25,24 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
     with SingleTickerProviderStateMixin {
   final _studentService = StudentService();
   final _notifService = NotificationApiService();
+  final _courseService = CourseService();
+  final _enrollService = EnrollmentService();
 
   late TabController _tabController;
 
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _stats;
   List<Course> _courses = [];
+  List<Course> _paidCourses = [];
+  List<Course> _freeCourses = [];
   List<Map<String, dynamic>> _badges = [];
   List<NotificationModel> _notifications = [];
   int _unreadCount = 0;
+  
+  // New: Recommended and Most Popular courses
+  List<Course> _recommendedCourses = [];
+  List<Course> _mostPopularCourses = [];
+  Set<String> _enrolledCourseIds = {};
 
   bool _loading = true;
   String? _error;
@@ -58,10 +70,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
     });
 
     try {
-      final results = await Future.wait([
+      // Load core data first
+      final coreResults = await Future.wait([
         _studentService.getCurrentUser(),
         _studentService.getStudentStats(userId),
         _studentService.getStudentCourses(userId),
+        _studentService.getStudentFreeCourses(userId),
+        _studentService.getStudentPaidCourses(userId),
         _studentService.getMyBadgeStatus(),
         _notifService.getNotifications(),
         _notifService.getUnreadCount(),
@@ -72,13 +87,39 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
       // Update global notification provider
       context.read<NotificationProvider>().fetchUnreadCount();
 
+      final allCourses = coreResults[2] as List<Course>;
+      final enrolledIds = allCourses.map((c) => c.courseId).toSet();
+
+      // Load recommended and popular courses separately (non-blocking)
+      List<Course> recommended = [];
+      List<Course> popular = [];
+      
+      try {
+        recommended = await _studentService.getRecommendations(userId, topN: 10);
+      } catch (e) {
+        print('Failed to load recommendations: $e');
+      }
+      
+      try {
+        popular = await _courseService.getMostPopularCourses(limit: 10);
+      } catch (e) {
+        print('Failed to load popular courses: $e');
+      }
+
+      if (!mounted) return;
+
       setState(() {
-        _userProfile = results[0] as Map<String, dynamic>;
-        _stats = results[1] as Map<String, dynamic>;
-        _courses = results[2] as List<Course>;
-        _badges = results[3] as List<Map<String, dynamic>>;
-        _notifications = results[4] as List<NotificationModel>;
-        _unreadCount = results[5] as int;
+        _userProfile = coreResults[0] as Map<String, dynamic>;
+        _stats = coreResults[1] as Map<String, dynamic>;
+        _courses = allCourses;
+        _freeCourses = coreResults[3] as List<Course>;
+        _paidCourses = coreResults[4] as List<Course>;
+        _badges = coreResults[5] as List<Map<String, dynamic>>;
+        _notifications = coreResults[6] as List<NotificationModel>;
+        _unreadCount = coreResults[7] as int;
+        _recommendedCourses = recommended;
+        _mostPopularCourses = popular;
+        _enrolledCourseIds = enrolledIds;
         _loading = false;
       });
     } catch (e) {
@@ -189,14 +230,56 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               const SizedBox(height: 20),
             ],
 
-            // Recent courses
-            if (_courses.isNotEmpty) ...[
-              _sectionTitle('Continue Learning'),
+            // Recommended courses section
+            if (_recommendedCourses.isNotEmpty) ...[
+              _sectionTitle('Recommended for You'),
               const SizedBox(height: 12),
-              ..._courses
-                  .take(3)
-                  .map((c) => _buildCourseCard(c))
-                  .toList(),
+              SizedBox(
+                height: 248,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: _recommendedCourses.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (_, i) => _buildDiscoveryCourseCard(_recommendedCourses[i]),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // Most Popular courses section
+            if (_mostPopularCourses.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _sectionTitle('Most Popular'),
+                  TextButton(
+                    onPressed: () {
+                      // Navigate to all courses view
+                      _showAllPopularCourses();
+                    },
+                    child: const Text(
+                      'Show All',
+                      style: TextStyle(
+                        color: AppTheme.primaryGold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 248,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: _mostPopularCourses.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (_, i) => _buildDiscoveryCourseCard(_mostPopularCourses[i]),
+                ),
+              ),
             ],
           ],
         ),
@@ -354,7 +437,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
 
   // ── Courses Tab ────────────────────────────────────────────────────────────
   Widget _buildCoursesTab() {
-    if (_courses.isEmpty) {
+    if (_paidCourses.isEmpty && _freeCourses.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -378,81 +461,249 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
     return RefreshIndicator(
       color: AppTheme.primaryGold,
       onRefresh: _loadAll,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _courses.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) => _buildCourseCard(_courses[i]),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Paid Courses Row ──────────────────────────────────────────
+            _buildLibraryCourseSection(
+              title: 'Paid Courses',
+              icon: Icons.attach_money_rounded,
+              courses: _paidCourses,
+              emptyMessage: 'No paid courses enrolled yet',
+            ),
+            const SizedBox(height: 28),
+
+            // ── Free Courses Row ──────────────────────────────────────────
+            _buildLibraryCourseSection(
+              title: 'Free Courses',
+              icon: Icons.card_giftcard_rounded,
+              courses: _freeCourses,
+              emptyMessage: 'No free courses enrolled yet',
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCourseCard(Course course) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
+  Widget _buildLibraryCourseSection({
+    required String title,
+    required IconData icon,
+    required List<Course> courses,
+    required String emptyMessage,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Row(
           children: [
             Container(
-              width: 52,
-              height: 52,
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: AppTheme.paleGold,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.play_circle_outline,
-                  color: AppTheme.primaryGold, size: 28),
+              child: Icon(icon, size: 16, color: AppTheme.primaryGold),
             ),
-            const SizedBox(width: 14),
-            Expanded(
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.paleGold,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${courses.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.darkGold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Horizontal scroll list
+        if (courses.isEmpty)
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.paleGold),
+            ),
+            child: Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(course.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: AppTheme.textPrimary),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.video_library_outlined,
-                          size: 13, color: AppTheme.textSecondary),
-                      const SizedBox(width: 4),
-                      Text('${course.lessonCount} lessons',
-                          style: const TextStyle(
-                              fontSize: 12, color: AppTheme.textSecondary)),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: course.isFree
-                              ? AppTheme.paleGold
-                              : AppTheme.primaryGold.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          course.isFree ? 'Free' : '\$${course.price?.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: course.isFree
-                                ? AppTheme.darkGold
-                                : AppTheme.primaryGold,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Icon(icon,
+                      size: 28,
+                      color: AppTheme.primaryGold.withValues(alpha: 0.4)),
+                  const SizedBox(height: 8),
+                  Text(
+                    emptyMessage,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppTheme.primaryGold),
+          )
+        else
+          SizedBox(
+            height: 200,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: courses.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (_, i) => _buildLibraryCourseCard(courses[i]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLibraryCourseCard(Course course) {
+    final thumbUrl = course.thumbnailUrl != null &&
+            course.thumbnailUrl!.isNotEmpty
+        ? ApiClient.formatMediaUrl(course.thumbnailUrl)
+        : null;
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to course detail / lesson player
+      },
+      child: Container(
+        width: 220,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryGold.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: AppTheme.paleGold),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail — no three-dot menu
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: thumbUrl != null
+                  ? Image.network(
+                      thumbUrl,
+                      height: 100,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          _libraryThumbnailPlaceholder(),
+                    )
+                  : _libraryThumbnailPlaceholder(),
+            ),
+
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      course.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: AppTheme.textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        if (course.level != null)
+                          _chip(
+                            course.level!,
+                            AppTheme.primaryGold.withValues(alpha: 0.12),
+                            AppTheme.primaryGold,
+                          ),
+                        const SizedBox(width: 5),
+                        _chip(
+                          course.isFree
+                              ? 'Free'
+                              : '\$${course.price?.toStringAsFixed(0)}',
+                          AppTheme.paleGold,
+                          AppTheme.darkGold,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.play_circle_outline,
+                            size: 13, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${course.lessonCount} lesson${course.lessonCount == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                              fontSize: 11, color: AppTheme.textSecondary),
+                        ),
+                        if (course.instructor?.username != null) ...[
+                          const SizedBox(width: 8),
+                          const Icon(Icons.person_outline,
+                              size: 13, color: AppTheme.textSecondary),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              course.instructor!.username!,
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppTheme.textSecondary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _libraryThumbnailPlaceholder() {
+    return Container(
+      height: 100,
+      width: double.infinity,
+      color: AppTheme.paleGold,
+      child: const Icon(
+        Icons.menu_book_outlined,
+        color: AppTheme.primaryGold,
+        size: 36,
       ),
     );
   }
@@ -580,6 +831,277 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
         fontSize: 17,
         fontWeight: FontWeight.bold,
         color: AppTheme.textPrimary,
+      ),
+    );
+  }
+
+  // ── Home tab: "Continue Learning" card (simple list style) ────────────────
+  Widget _buildCourseCard(Course course) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppTheme.paleGold,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.play_circle_outline,
+                  color: AppTheme.primaryGold, size: 28),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(course.title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: AppTheme.textPrimary),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.video_library_outlined,
+                          size: 13, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Text('${course.lessonCount} lessons',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppTheme.textSecondary)),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: course.isFree
+                              ? AppTheme.paleGold
+                              : AppTheme.primaryGold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          course.isFree
+                              ? 'Free'
+                              : '\$${course.price?.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: course.isFree
+                                ? AppTheme.darkGold
+                                : AppTheme.primaryGold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppTheme.primaryGold),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared chip widget (matches instructor card style) ────────────────────
+  Widget _chip(String label, Color bg, Color fg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
+  // ── Discovery course card (for recommended & popular) ──────────────────────
+  Widget _buildDiscoveryCourseCard(Course course) {
+    final isEnrolled = _enrolledCourseIds.contains(course.courseId);
+    final thumbUrl = course.thumbnailUrl != null &&
+            course.thumbnailUrl!.isNotEmpty
+        ? ApiClient.formatMediaUrl(course.thumbnailUrl)
+        : null;
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to course detail
+      },
+      child: Container(
+        width: 220,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryGold.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: AppTheme.paleGold),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail with check icon if enrolled
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: thumbUrl != null
+                      ? Image.network(
+                          thumbUrl,
+                          height: 95,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _thumbPlaceholder(),
+                        )
+                      : _thumbPlaceholder(),
+                ),
+                if (isEnrolled)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGold,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: AppTheme.pureWhite,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            // Card body
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    course.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: AppTheme.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+
+                  // Level + price chips
+                  Row(
+                    children: [
+                      if (course.level != null) ...[
+                        _chip(
+                          course.level!,
+                          AppTheme.primaryGold.withValues(alpha: 0.12),
+                          AppTheme.primaryGold,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      _chip(
+                        course.isFree
+                            ? 'Free'
+                            : '\$${course.price?.toStringAsFixed(0)}',
+                        AppTheme.paleGold,
+                        AppTheme.darkGold,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Lessons + instructor
+                  Row(
+                    children: [
+                      const Icon(Icons.play_circle_outline,
+                          size: 11, color: AppTheme.textSecondary),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${course.lessonCount} lesson${course.lessonCount == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                            fontSize: 10, color: AppTheme.textSecondary),
+                      ),
+                      if (course.instructor?.username != null) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.person_outline,
+                            size: 11, color: AppTheme.textSecondary),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            course.instructor!.username!,
+                            style: const TextStyle(
+                                fontSize: 10, color: AppTheme.textSecondary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _thumbPlaceholder() {
+    return Container(
+      height: 95,
+      width: double.infinity,
+      color: AppTheme.paleGold,
+      child: const Icon(Icons.menu_book_outlined,
+          color: AppTheme.primaryGold, size: 32),
+    );
+  }
+
+  void _showAllPopularCourses() {
+    // Navigate to a full screen showing all popular courses
+    // For now, show a simple dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Most Popular Courses'),
+        content: const Text('Full course list view coming soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
