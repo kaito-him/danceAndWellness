@@ -15,6 +15,8 @@ import '../screens/reset_password_screen.dart';
 import '../screens/notification_screen.dart';
 import '../screens/instructor/instructor_drafts_screen.dart';
 import '../screens/instructor/instructor_archived_screen.dart';
+import '../screens/instructor/instructor_course_detail_screen.dart';
+import '../screens/instructor/instructor_student_profile_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -99,6 +101,24 @@ class AppRouter {
       GoRoute(
         path: '/instructor/archived',
         builder: (context, state) => const InstructorArchivedScreen(),
+      ),
+      GoRoute(
+        path: '/instructor/course/:courseId',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return InstructorCourseDetailScreen(courseId: courseId);
+        },
+      ),
+      GoRoute(
+        path: '/instructor/student/:userId/:name',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          final name = state.pathParameters['name']!;
+          return InstructorStudentProfileScreen(
+            studentUserId: userId,
+            studentName: name,
+          );
+        },
       ),
       GoRoute(
         path: '/admin/home',

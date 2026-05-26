@@ -117,155 +117,299 @@ class _CourseDetailsBottomSheetState extends State<CourseDetailsBottomSheet> {
     });
 
     final apiClient = ApiClient();
-    final response = await apiClient.dio.post('/api/files/upload', data: formData);
+    final response = await apiClient.dio.post('/files/upload', data: formData);
     return response.data['url'] as String;
   }
 
-  Future<void> _saveChanges() async {
-    if (!_isEditing) return;
-    
-    // Clear previous errors
+  // ── Validate publish requirements ────────────────────────────────────────
+  bool _validateForPublish() {
     setState(() {
       _titleError = null;
       _lessonsError = null;
       _thumbnailError = null;
     });
-    
-    final c = widget.editCourse;
-    final isDraft = c == null || c.status == 'DRAFT';
-    final title = _titleCtrl.text.trim();
-    if (title.isEmpty) {
+
+    bool valid = true;
+
+    if (_titleCtrl.text.trim().isEmpty) {
+      setState(() => _titleError = 'Please enter a course title');
+      valid = false;
+    }
+
+    if (_thumbnailFile == null &&
+        (_existingThumbnailUrl == null || _existingThumbnailUrl!.isEmpty)) {
+      setState(() => _thumbnailError = 'Please upload a course thumbnail');
+      valid = false;
+    }
+
+    final nonEmptyLessons = _lessons.where((l) {
+      final hasTitle = l.titleCtrl.text.trim().isNotEmpty;
+      final hasVideo =
+          l.videoFile != null || (l.mediaUrl != null && l.mediaUrl!.isNotEmpty);
+      return hasTitle || hasVideo;
+    }).toList();
+
+    if (nonEmptyLessons.isEmpty) {
+      setState(() => _lessonsError = 'Please add at least one lesson');
+      valid = false;
+    } else {
+      for (int i = 0; i < nonEmptyLessons.length; i++) {
+        final l = nonEmptyLessons[i];
+        if (l.titleCtrl.text.trim().isEmpty) {
+          setState(() => _lessonsError = 'Lesson ${i + 1} must have a title');
+          valid = false;
+          break;
+        }
+        if (l.videoFile == null &&
+            (l.mediaUrl == null || l.mediaUrl!.isEmpty)) {
+          setState(
+              () => _lessonsError = 'Lesson ${i + 1} must have a video');
+          valid = false;
+          break;
+        }
+      }
+    }
+
+    // Quiz validation
+    for (int i = 0; i < _quizzes.length; i++) {
+      final q = _quizzes[i];
+      if (q.titleCtrl.text.trim().isEmpty) {
+        setState(() => _lessonsError = 'Quiz ${i + 1} must have a title');
+        valid = false;
+        break;
+      }
+      for (int j = 0; j < q.questions.length; j++) {
+        final qst = q.questions[j];
+        if (qst.textCtrl.text.trim().isEmpty) {
+          setState(() =>
+              _lessonsError = 'Quiz ${i + 1}, Question ${j + 1} must have text');
+          valid = false;
+          break;
+        }
+        if (qst.options.length < 2) {
+          setState(() => _lessonsError =
+              'Quiz ${i + 1}, Question ${j + 1} needs at least 2 options');
+          valid = false;
+          break;
+        }
+        if (qst.options.any((o) => o.textCtrl.text.trim().isEmpty)) {
+          setState(() => _lessonsError =
+              'All options in Quiz ${i + 1}, Question ${j + 1} must have text');
+          valid = false;
+          break;
+        }
+        if (!qst.options.any((o) => o.isCorrect)) {
+          setState(() => _lessonsError =
+              'Quiz ${i + 1}, Question ${j + 1} must have at least one correct option');
+          valid = false;
+          break;
+        }
+      }
+      if (!valid) break;
+    }
+
+    return valid;
+  }
+
+  // ── Build the course payload and upload any new files ────────────────────
+  Future<Map<String, dynamic>> _buildPayload({required bool isDraft}) async {
+    // Upload thumbnail if new
+    String thumbUrl = _existingThumbnailUrl ?? '';
+    if (_thumbnailFile != null) {
+      thumbUrl = await _uploadFile(_thumbnailFile!);
+    }
+
+    // Upload lesson videos
+    final lessonData = [];
+    for (int i = 0; i < _lessons.length; i++) {
+      final l = _lessons[i];
+      final lTitle = l.titleCtrl.text.trim();
+      // Skip completely empty lessons when saving a draft
+      if (isDraft &&
+          lTitle.isEmpty &&
+          l.videoFile == null &&
+          (l.mediaUrl == null || l.mediaUrl!.isEmpty)) {
+        continue;
+      }
+      String? videoUrl = l.mediaUrl;
+      if (l.videoFile != null) {
+        videoUrl = await _uploadFile(l.videoFile!);
+      }
+      lessonData.add({
+        'lessonId': 'lesson_${DateTime.now().millisecondsSinceEpoch}_$i',
+        'title': lTitle.isEmpty ? 'Untitled Lesson' : lTitle,
+        'mediaUrl': videoUrl,
+        'order': i,
+        'duration': 0,
+      });
+    }
+
+    // Map quizzes
+    final quizData = _quizzes.asMap().entries.map((quizEntry) {
+      final qIdx = quizEntry.key;
+      final q = quizEntry.value;
+      return {
+        'quizId': 'quiz_${DateTime.now().millisecondsSinceEpoch}_$qIdx',
+        'title':
+            q.titleCtrl.text.trim().isEmpty ? 'Untitled Quiz' : q.titleCtrl.text.trim(),
+        'questions': q.questions.asMap().entries.map((qstEntry) {
+          final qstIdx = qstEntry.key;
+          final qst = qstEntry.value;
+          return {
+            'questionId':
+                'question_${DateTime.now().millisecondsSinceEpoch}_$qstIdx',
+            'text': qst.textCtrl.text.trim().isEmpty
+                ? 'Untitled Question'
+                : qst.textCtrl.text.trim(),
+            'options': qst.options
+                .map((opt) => {
+                      'text': opt.textCtrl.text.trim().isEmpty
+                          ? 'Option'
+                          : opt.textCtrl.text.trim(),
+                      'isCorrect': opt.isCorrect,
+                    })
+                .toList()
+          };
+        }).toList()
+      };
+    }).toList();
+
+    return {
+      'title': _titleCtrl.text.trim(),
+      'description': _descCtrl.text.trim(),
+      'level': _selectedLevel,
+      'categoryId': _selectedCategoryId,
+      'isFree': _isFree,
+      'price': _isFree ? 0 : double.tryParse(_priceCtrl.text) ?? 0,
+      'thumbnailUrl': thumbUrl,
+      'lessons': lessonData,
+      'quizzes': quizData,
+    };
+  }
+
+  Future<void> _saveChanges() async {
+    if (!_isEditing) return;
+
+    setState(() {
+      _titleError = null;
+      _lessonsError = null;
+      _thumbnailError = null;
+    });
+
+    if (_titleCtrl.text.trim().isEmpty) {
       setState(() => _titleError = 'Please enter a course title');
       return;
     }
 
-    if (!isDraft) {
-      if (_thumbnailFile == null && (_existingThumbnailUrl == null || _existingThumbnailUrl!.isEmpty)) {
-        setState(() => _thumbnailError = 'Please upload a course thumbnail');
-        return;
-      }
-      if (_lessons.isEmpty) {
-        setState(() => _lessonsError = 'Please add at least one lesson');
-        return;
-      }
-      if (_lessons.any((l) => l.titleCtrl.text.trim().isEmpty || (l.videoFile == null && (l.mediaUrl == null || l.mediaUrl!.isEmpty)))) {
-        setState(() => _lessonsError = 'All lessons must have a title and a video');
-        return;
-      }
-
-      // Quiz validation
-      for (int i = 0; i < _quizzes.length; i++) {
-        final q = _quizzes[i];
-        if (q.titleCtrl.text.trim().isEmpty) {
-          setState(() => _lessonsError = 'Quiz ${i + 1} must have a title');
-          return;
-        }
-        for (int j = 0; j < q.questions.length; j++) {
-          final qst = q.questions[j];
-          if (qst.textCtrl.text.trim().isEmpty) {
-            setState(() => _lessonsError = 'Quiz ${i + 1}, Question ${j + 1} must have text');
-            return;
-          }
-          if (qst.options.length < 2) {
-            setState(() => _lessonsError = 'Quiz ${i + 1}, Question ${j + 1} needs at least 2 options');
-            return;
-          }
-          if (qst.options.any((o) => o.textCtrl.text.trim().isEmpty)) {
-            setState(() => _lessonsError = 'All options in Quiz ${i + 1}, Question ${j + 1} must have text');
-            return;
-          }
-          if (!qst.options.any((o) => o.isCorrect)) {
-            setState(() => _lessonsError = 'Quiz ${i + 1}, Question ${j + 1} must have at least one correct option');
-            return;
-          }
-        }
-      }
-    }
-
     setState(() => _saving = true);
     try {
-      // 1. Upload Thumbnail
-      String thumbUrl = _existingThumbnailUrl ?? '';
-      if (_thumbnailFile != null) {
-        thumbUrl = await _uploadFile(_thumbnailFile!);
-      }
-
-      // 2. Upload Lesson Videos
-      final lessonData = [];
-      for (int i = 0; i < _lessons.length; i++) {
-        final l = _lessons[i];
-        final lTitle = l.titleCtrl.text.trim();
-        if (isDraft && lTitle.isEmpty && l.videoFile == null && (l.mediaUrl == null || l.mediaUrl!.isEmpty)) {
-          continue; // Skip empty draft lessons
-        }
-        String? videoUrl = l.mediaUrl;
-        if (l.videoFile != null) {
-          videoUrl = await _uploadFile(l.videoFile!);
-        }
-        lessonData.add({
-          'lessonId': l.mediaUrl != null && l.mediaUrl!.isNotEmpty ? 'lesson_${DateTime.now().millisecondsSinceEpoch}_$i' : 'lesson_${DateTime.now().millisecondsSinceEpoch}_$i',
-          'title': lTitle.isEmpty ? 'Untitled Lesson' : lTitle,
-          'mediaUrl': videoUrl,
-          'order': i,
-          'duration': 0,
-        });
-      }
-
-      // 3. Map Quizzes
-      final quizData = _quizzes.asMap().entries.map((quizEntry) {
-        final qIdx = quizEntry.key;
-        final q = quizEntry.value;
-        return {
-          'quizId': 'quiz_${DateTime.now().millisecondsSinceEpoch}_$qIdx',
-          'title': q.titleCtrl.text.trim().isEmpty ? 'Untitled Quiz' : q.titleCtrl.text.trim(),
-          'questions': q.questions.asMap().entries.map((qstEntry) {
-            final qstIdx = qstEntry.key;
-            final qst = qstEntry.value;
-            return {
-              'questionId': 'question_${DateTime.now().millisecondsSinceEpoch}_$qstIdx',
-              'text': qst.textCtrl.text.trim().isEmpty ? 'Untitled Question' : qst.textCtrl.text.trim(),
-              'options': qst.options.map((opt) => {
-                'text': opt.textCtrl.text.trim().isEmpty ? 'Option' : opt.textCtrl.text.trim(),
-                'isCorrect': opt.isCorrect,
-              }).toList()
-            };
-          }).toList()
-        };
-      }).toList();
-
-      final data = {
-        'title': title,
-        'description': _descCtrl.text.trim(),
-        'level': _selectedLevel,
-        'categoryId': _selectedCategoryId,
-        'isFree': _isFree,
-        'price': _isFree ? 0 : double.tryParse(_priceCtrl.text) ?? 0,
-        'thumbnailUrl': thumbUrl,
-        'lessons': lessonData,
-        'quizzes': quizData,
-      };
-
-      final apiClient = ApiClient();
       final courseId = widget.editCourse?.courseId;
+      if (courseId == null) return;
 
-      if (courseId != null) {
-        await apiClient.dio.put('/api/courses/$courseId', data: data);
+      final data = await _buildPayload(isDraft: true);
+      final apiClient = ApiClient();
+
+      try {
+        await apiClient.dio.put('/courses/$courseId', data: data);
+      } on dio_pkg.DioException catch (e) {
+        if (e.response?.statusCode == 403) {
+          throw Exception('Access denied. Please log out and log in again.');
+        }
+        rethrow;
       }
 
       if (mounted) Navigator.pop(context);
       widget.onSaved();
-      _showSnackBar(
-        'Changes saved successfully! 📝',
-        Colors.green,
-      );
+      _show('Changes saved successfully!', Colors.green);
     } catch (e) {
-      _showSnackBar(e.toString().replaceFirst('Exception: ', ''), Colors.red);
+      _show(e.toString().replaceFirst('Exception: ', ''), Colors.red);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  void _showSnackBar(String msg, Color bg) {
+  Future<void> _publishCourse() async {
+    if (!_isEditing) return;
+    if (!_validateForPublish()) return;
+
+    // Confirm before publishing
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.rocket_launch_outlined, color: AppTheme.primaryGold),
+            SizedBox(width: 8),
+            Text('Publish Course'),
+          ],
+        ),
+        content: const Text(
+          'Once published, the course will be visible to all students. '
+          'Title and pricing cannot be changed after publishing.\n\n'
+          'Are you ready to publish?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not Yet'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGold,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Publish'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _saving = true);
+    try {
+      final courseId = widget.editCourse?.courseId;
+      if (courseId == null) return;
+
+      final apiClient = ApiClient();
+
+      // Step 1: Save all changes first
+      final data = await _buildPayload(isDraft: false);
+      try {
+        await apiClient.dio.put('/courses/$courseId', data: data);
+      } on dio_pkg.DioException catch (e) {
+        if (e.response?.statusCode == 403) {
+          throw Exception('Access denied. Please log out and log in again.');
+        }
+        final msg = e.response?.data;
+        throw Exception(msg?.toString() ?? 'Failed to save course before publishing.');
+      }
+
+      // Step 2: Publish
+      try {
+        await apiClient.dio.patch('/courses/$courseId/publish');
+      } on dio_pkg.DioException catch (e) {
+        if (e.response?.statusCode == 403) {
+          throw Exception('Access denied. Please log out and log in again.');
+        }
+        final msg = e.response?.data;
+        throw Exception(msg?.toString() ?? 'Failed to publish course.');
+      }
+
+      if (mounted) Navigator.pop(context);
+      widget.onSaved();
+      _show('Course published successfully!', Colors.green);
+    } catch (e) {
+      _show(e.toString().replaceFirst('Exception: ', ''), Colors.red);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  void _show(String msg, Color bg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: bg),
     );
@@ -380,9 +524,11 @@ class _CourseDetailsBottomSheetState extends State<CourseDetailsBottomSheet> {
                     controller: _titleCtrl,
                     enabled: _isEditing && isDraft,
                     decoration: _inputDeco('Course Title', Icons.title_rounded).copyWith(
-                      helperText: isDraft ? null : 'Title cannot be changed after publishing',
-                      helperStyle: const TextStyle(fontSize: 11, color: Colors.grey),
-                      errorText: _titleError,
+                      helperText: _titleError ?? (isDraft ? null : 'Title cannot be changed after publishing'),
+                      helperStyle: TextStyle(
+                        fontSize: 11,
+                        color: _titleError != null ? Colors.red : Colors.grey,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -393,37 +539,18 @@ class _CourseDetailsBottomSheetState extends State<CourseDetailsBottomSheet> {
                     decoration: _inputDeco('Description', Icons.description_outlined),
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedLevel,
-                          isExpanded: true,
-                          decoration: _inputDeco('Level', Icons.bar_chart_rounded),
-                          items: const [
-                            DropdownMenuItem(value: 'BEGINNER', child: Text('Beginner', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                            DropdownMenuItem(value: 'INTERMEDIATE', child: Text('Intermediate', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                            DropdownMenuItem(value: 'ADVANCED', child: Text('Advanced', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                          ],
-                          onChanged: _isEditing ? (v) => setState(() => _selectedLevel = v ?? 'BEGINNER') : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedCategoryId,
-                          isExpanded: true,
-                          decoration: _inputDeco('Category', Icons.category_outlined),
-                          items: widget.categories.map((cat) => DropdownMenuItem<String>(
-                            value: cat['id'],
-                            child: Text(cat['name'] ?? 'Misc', overflow: TextOverflow.ellipsis, maxLines: 1),
-                          )).toList(),
-                          onChanged: _isEditing ? (v) => setState(() => _selectedCategoryId = v) : null,
-                        ),
-                      ),
+                  DropdownButtonFormField<String>(
+                    value: _selectedLevel,
+                    isExpanded: true,
+                    decoration: _inputDeco('Level', Icons.bar_chart_rounded),
+                    items: const [
+                      DropdownMenuItem(value: 'BEGINNER', child: Text('Beginner', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                      DropdownMenuItem(value: 'INTERMEDIATE', child: Text('Intermediate', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                      DropdownMenuItem(value: 'ADVANCED', child: Text('Advanced', overflow: TextOverflow.ellipsis, maxLines: 1)),
                     ],
+                    onChanged: _isEditing ? (v) => setState(() => _selectedLevel = v ?? 'BEGINNER') : null,
                   ),
-                  
+
                   const SizedBox(height: 28),
                   
                   // ── Section 2: Thumbnail ──
@@ -892,28 +1019,91 @@ class _CourseDetailsBottomSheetState extends State<CourseDetailsBottomSheet> {
           // Bottom Buttons
           if (_isEditing)
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5)),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
                 ],
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _saveChanges,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGold,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              child: Builder(builder: (context) {
+                final c = widget.editCourse;
+                final isDraft = c == null || c.status == 'DRAFT';
+
+                if (isDraft) {
+                  // Two-button layout for drafts
+                  return Row(
+                    children: [
+                      // Save Changes
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _saving ? null : _saveChanges,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryGold,
+                            side: const BorderSide(color: AppTheme.primaryGold, width: 1.5),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _saving
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                      color: AppTheme.primaryGold, strokeWidth: 2))
+                              : const Text('Save Draft',
+                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Publish Course
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saving ? null : _publishCourse,
+                          icon: const Icon(Icons.rocket_launch_outlined, size: 18),
+                          label: const Text('Publish',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryGold,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Published course — only save changes
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _saveChanges,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryGold,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : const Text('Save Changes',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  child: _saving 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
+                );
+              }),
             ),
         ],
       ),

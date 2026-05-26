@@ -11,11 +11,13 @@ import '../utils/app_theme.dart';
 class CourseEditorBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> categories;
   final VoidCallback onSaved;
+  final String? instructorSpecialization;
 
   const CourseEditorBottomSheet({
     super.key,
     required this.categories,
     required this.onSaved,
+    this.instructorSpecialization,
   });
 
   @override
@@ -31,6 +33,16 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
   String? _selectedCategoryId;
   late bool _isFree;
   bool _saving = false;
+  String _priceType = 'predefined'; // "predefined" | "custom"
+  static const List<String> PRICE_TIERS = ['10', '20', '30'];
+  
+  // Error messages
+  String? _titleError;
+  String? _thumbnailError;
+  String? _lessonsError;
+  String? _priceError;
+  Map<int, String?> _lessonErrors = {};
+  Map<int, Map<String, String?>> _quizErrors = {};
 
   File? _thumbnailFile;
   String? _existingThumbnailUrl;
@@ -45,8 +57,23 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
     _descCtrl = TextEditingController();
     _priceCtrl = TextEditingController(text: '10');
     _selectedLevel = 'BEGINNER';
-    _selectedCategoryId = widget.categories.isNotEmpty ? widget.categories[0]['id'] : null;
     _isFree = true;
+
+    // Auto-select category based on instructor specialization (matching website logic)
+    if (widget.categories.isNotEmpty) {
+      final specialization = widget.instructorSpecialization;
+      if (specialization != null && specialization.isNotEmpty) {
+        final matchedCat = widget.categories.firstWhere(
+          (c) => (c['name'] as String?)?.toLowerCase() == specialization.toLowerCase(),
+          orElse: () => widget.categories[0],
+        );
+        _selectedCategoryId = matchedCat['id'] as String?;
+      } else {
+        _selectedCategoryId = widget.categories[0]['id'] as String?;
+      }
+    } else {
+      _selectedCategoryId = null;
+    }
 
     _lessons.add(_NewLesson());
   }
@@ -75,57 +102,101 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
     });
 
     final apiClient = ApiClient();
-    final response = await apiClient.dio.post('/api/files/upload', data: formData);
+    final response = await apiClient.dio.post('/files/upload', data: formData);
     return response.data['url'] as String;
   }
 
   Future<void> _saveOrPublish({required bool isDraft}) async {
+    // Clear previous errors
+    setState(() {
+      _titleError = null;
+      _thumbnailError = null;
+      _lessonsError = null;
+      _priceError = null;
+      _lessonErrors = {};
+      _quizErrors = {};
+    });
+
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
-      _showSnackBar('Please enter a course title', Colors.red);
+      setState(() => _titleError = 'Please enter a course title');
       return;
+    }
+
+    // Price validation for paid courses
+    if (!_isFree) {
+      final price = double.tryParse(_priceCtrl.text);
+      if (price == null) {
+        setState(() => _priceError = 'Please enter a valid price');
+        return;
+      }
+      if (price < 10 || price > 100) {
+        setState(() => _priceError = 'Price must be between \$10 and \$100');
+        return;
+      }
     }
 
     if (!isDraft) {
       if (_thumbnailFile == null && (_existingThumbnailUrl == null || _existingThumbnailUrl!.isEmpty)) {
-        _showSnackBar('Please upload a course thumbnail', Colors.red);
+        setState(() => _thumbnailError = 'Please upload a course thumbnail');
         return;
       }
       if (_lessons.isEmpty) {
-        _showSnackBar('Please add at least one lesson', Colors.red);
+        setState(() => _lessonsError = 'Please add at least one lesson');
         return;
       }
-      if (_lessons.any((l) => l.titleCtrl.text.trim().isEmpty || (l.videoFile == null && (l.mediaUrl == null || l.mediaUrl!.isEmpty)))) {
-        _showSnackBar('All lessons must have a title and a video', Colors.red);
+      
+      // Validate each lesson
+      bool hasLessonError = false;
+      for (int i = 0; i < _lessons.length; i++) {
+        final l = _lessons[i];
+        if (l.titleCtrl.text.trim().isEmpty) {
+          _lessonErrors[i] = 'Lesson must have a title';
+          hasLessonError = true;
+        }
+        if (l.videoFile == null && (l.mediaUrl == null || l.mediaUrl!.isEmpty)) {
+          _lessonErrors[i] = _lessonErrors[i] ?? 'Lesson must have a video';
+          hasLessonError = true;
+        }
+      }
+      if (hasLessonError) {
+        setState(() => _lessonErrors = Map.from(_lessonErrors));
         return;
       }
 
       // Quiz validation
+      bool hasQuizError = false;
       for (int i = 0; i < _quizzes.length; i++) {
         final q = _quizzes[i];
         if (q.titleCtrl.text.trim().isEmpty) {
-          _showSnackBar('Quiz ${i + 1} must have a title', Colors.red);
-          return;
+          _quizErrors[i] = {'title': 'Quiz must have a title'};
+          hasQuizError = true;
         }
         for (int j = 0; j < q.questions.length; j++) {
           final qst = q.questions[j];
           if (qst.textCtrl.text.trim().isEmpty) {
-            _showSnackBar('Quiz ${i + 1}, Question ${j + 1} must have text', Colors.red);
-            return;
+            _quizErrors[i] = {...?_quizErrors[i], 'question_$j': 'Question must have text'};
+            hasQuizError = true;
           }
           if (qst.options.length < 2) {
-            _showSnackBar('Quiz ${i + 1}, Question ${j + 1} needs at least 2 options', Colors.red);
-            return;
+            _quizErrors[i] = {...?_quizErrors[i], 'question_$j': '${_quizErrors[i]?['question_$j'] ?? ''} · Needs at least 2 options'};
+            hasQuizError = true;
           }
-          if (qst.options.any((o) => o.textCtrl.text.trim().isEmpty)) {
-            _showSnackBar('All options in Quiz ${i + 1}, Question ${j + 1} must have text', Colors.red);
-            return;
+          for (int k = 0; k < qst.options.length; k++) {
+            if (qst.options[k].textCtrl.text.trim().isEmpty) {
+              _quizErrors[i] = {...?_quizErrors[i], 'option_${j}_$k': 'Option must have text'};
+              hasQuizError = true;
+            }
           }
           if (!qst.options.any((o) => o.isCorrect)) {
-            _showSnackBar('Quiz ${i + 1}, Question ${j + 1} must have at least one correct option', Colors.red);
-            return;
+            _quizErrors[i] = {...?_quizErrors[i], 'question_$j': '${_quizErrors[i]?['question_$j'] ?? ''} · Must have at least one correct option'};
+            hasQuizError = true;
           }
         }
+      }
+      if (hasQuizError) {
+        setState(() => _quizErrors = Map.from(_quizErrors));
+        return;
       }
     }
 
@@ -192,15 +263,36 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
         'quizzes': quizData,
       };
       final apiClient = ApiClient();
-      
+
       // Create new course/draft
-      final path = isDraft ? '/api/courses/draft' : '/api/courses';
-      await apiClient.dio.post(path, data: data);
+      final path = isDraft ? '/courses/draft' : '/courses';
+
+      try {
+        // For publishing, use a two-step approach: save as draft first, then publish
+        if (!isDraft) {
+          final draftResponse = await apiClient.dio.post('/courses/draft', data: data);
+          final courseId = draftResponse.data['courseId'];
+          if (courseId == null) {
+            throw Exception('Failed to get courseId from draft response');
+          }
+          await apiClient.dio.patch('/courses/$courseId/publish');
+        } else {
+          await apiClient.dio.post(path, data: data);
+        }
+      } on dio_pkg.DioException catch (e) {
+        if (e.response?.statusCode == 403) {
+          throw Exception('Access denied. Please log out and log in again to refresh your session.');
+        }
+        if (e.response?.statusCode == 401) {
+          throw Exception('Session expired. Please log out and log in again.');
+        }
+        rethrow;
+      }
 
       if (mounted) Navigator.pop(context);
       widget.onSaved();
       _showSnackBar(
-        isDraft ? 'Draft saved successfully! 📝' : 'Course published successfully! 🎉',
+        isDraft ? 'Draft saved successfully!' : 'Course published successfully!',
         Colors.green,
       );
     } catch (e) {
@@ -301,9 +393,13 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                     controller: _titleCtrl,
                     enabled: isDraft,
                     decoration: _inputDeco('Course Title', Icons.title_rounded).copyWith(
-                      helperText: isDraft ? null : 'Title cannot be changed after publishing',
-                      helperStyle: const TextStyle(fontSize: 11, color: Colors.grey),
+                      helperText: _titleError ?? (isDraft ? null : 'Title cannot be changed after publishing'),
+                      helperStyle: TextStyle(
+                        fontSize: 11,
+                        color: _titleError != null ? Colors.red : Colors.grey,
+                      ),
                     ),
+                    onChanged: (_) => setState(() => _titleError = null),
                   ),
                   const SizedBox(height: 14),
                   TextField(
@@ -312,35 +408,16 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                     decoration: _inputDeco('Description', Icons.description_outlined),
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedLevel,
-                          isExpanded: true,
-                          decoration: _inputDeco('Level', Icons.bar_chart_rounded),
-                          items: const [
-                            DropdownMenuItem(value: 'BEGINNER', child: Text('Beginner', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                            DropdownMenuItem(value: 'INTERMEDIATE', child: Text('Intermediate', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                            DropdownMenuItem(value: 'ADVANCED', child: Text('Advanced', overflow: TextOverflow.ellipsis, maxLines: 1)),
-                          ],
-                          onChanged: (v) => setState(() => _selectedLevel = v ?? 'BEGINNER'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedCategoryId,
-                          isExpanded: true,
-                          decoration: _inputDeco('Category', Icons.category_outlined),
-                          items: widget.categories.map((cat) => DropdownMenuItem<String>(
-                            value: cat['id'],
-                            child: Text(cat['name'] ?? 'Misc', overflow: TextOverflow.ellipsis, maxLines: 1),
-                          )).toList(),
-                          onChanged: (v) => setState(() => _selectedCategoryId = v),
-                        ),
-                      ),
+                  DropdownButtonFormField<String>(
+                    value: _selectedLevel,
+                    isExpanded: true,
+                    decoration: _inputDeco('Level', Icons.bar_chart_rounded),
+                    items: const [
+                      DropdownMenuItem(value: 'BEGINNER', child: Text('Beginner', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                      DropdownMenuItem(value: 'INTERMEDIATE', child: Text('Intermediate', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                      DropdownMenuItem(value: 'ADVANCED', child: Text('Advanced', overflow: TextOverflow.ellipsis, maxLines: 1)),
                     ],
+                    onChanged: (v) => setState(() => _selectedLevel = v ?? 'BEGINNER'),
                   ),
                   
                   const SizedBox(height: 28),
@@ -355,6 +432,7 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                       if (img != null) {
                         setState(() {
                           _thumbnailFile = File(img.path);
+                          _thumbnailError = null;
                         });
                       }
                     },
@@ -449,11 +527,175 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                           ),
                           if (!_isFree)
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              child: TextField(
-                                controller: _priceCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: _inputDeco('Price (USD)', Icons.monetization_on_outlined),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Price Type Selector
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                _priceType = 'predefined';
+                                                if (!PRICE_TIERS.contains(_priceCtrl.text)) {
+                                                  _priceCtrl.text = PRICE_TIERS[0];
+                                                }
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              decoration: BoxDecoration(
+                                                color: _priceType == 'predefined' ? AppTheme.primaryGold : Colors.transparent,
+                                                borderRadius: const BorderRadius.only(
+                                                  topLeft: Radius.circular(8),
+                                                  bottomLeft: Radius.circular(8),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                'Tiers',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _priceType == 'predefined' ? Colors.white : AppTheme.textPrimary,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                _priceType = 'custom';
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              decoration: BoxDecoration(
+                                                color: _priceType == 'custom' ? AppTheme.primaryGold : Colors.transparent,
+                                                borderRadius: const BorderRadius.only(
+                                                  topRight: Radius.circular(8),
+                                                  bottomRight: Radius.circular(8),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                'Custom',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _priceType == 'custom' ? Colors.white : AppTheme.textPrimary,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Price Input based on type
+                                  if (_priceType == 'predefined')
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Select Price Tier',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Wrap(
+                                          spacing: 8,
+                                          children: PRICE_TIERS.map((tier) => 
+                                            InkWell(
+                                              onTap: () => setState(() {
+                                                _priceCtrl.text = tier;
+                                              }),
+                                              borderRadius: BorderRadius.circular(20),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: _priceCtrl.text == tier
+                                                      ? AppTheme.primaryGold
+                                                      : Colors.white,
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  border: Border.all(
+                                                    color: _priceCtrl.text == tier
+                                                        ? AppTheme.primaryGold
+                                                        : Colors.grey[300]!,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  '\$$tier',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: _priceCtrl.text == tier
+                                                        ? Colors.white
+                                                        : AppTheme.textPrimary,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ).toList(),
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        TextField(
+                                          controller: _priceCtrl,
+                                          keyboardType: TextInputType.number,
+                                          decoration: InputDecoration(
+                                            labelText: 'Custom Price (\$)',
+                                            prefixIcon: const Icon(Icons.monetization_on_outlined, color: AppTheme.primaryGold, size: 20),
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                              borderSide: const BorderSide(color: AppTheme.primaryGold, width: 1.5),
+                                            ),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                            helperText: _priceError ?? 'Range: \$10 – \$100',
+                                            helperStyle: TextStyle(
+                                              fontSize: 12,
+                                              color: _priceError != null ? Colors.red : Colors.grey[600],
+                                            ),
+                                          ),
+                                          onChanged: (_) => setState(() => _priceError = null),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Range: \$10 – \$100',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 12),
+                                  // Earnings hint
+                                  Text(
+                                    'You keep 80% · Platform retains 20%',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                         ],
@@ -481,6 +723,15 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                             style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ],
+                      ),
+                    ),
+                  
+                  if (_thumbnailError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _thumbnailError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ),
                   
@@ -529,7 +780,14 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: lesson.titleCtrl,
-                            decoration: _inputDeco('Lesson Title', Icons.play_circle_outline),
+                            decoration: _inputDeco('Lesson Title', Icons.play_circle_outline).copyWith(
+                              helperText: _lessonErrors[i],
+                              helperStyle: const TextStyle(fontSize: 11, color: Colors.red),
+                            ),
+                            onChanged: (_) => setState(() {
+                              _lessonErrors.remove(i);
+                              _lessonsError = null;
+                            }),
                           ),
                           const SizedBox(height: 12),
                           GestureDetector(
@@ -585,6 +843,15 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                       ),
                     );
                   }),
+                  
+                  if (_lessonsError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _lessonsError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ),
                   
                   const SizedBox(height: 28),
 
@@ -657,7 +924,13 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: quiz.titleCtrl,
-                            decoration: _inputDeco('Quiz Title', Icons.quiz_outlined),
+                            decoration: _inputDeco('Quiz Title', Icons.quiz_outlined).copyWith(
+                              helperText: _quizErrors[qIdx]?['title'],
+                              helperStyle: const TextStyle(fontSize: 11, color: Colors.red),
+                            ),
+                            onChanged: (_) => setState(() {
+                              _quizErrors[qIdx]?.remove('title');
+                            }),
                           ),
                           const SizedBox(height: 16),
                           
@@ -712,7 +985,12 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                                       hintText: 'Enter question text',
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                      helperText: _quizErrors[qIdx]?['question_$qstIdx'],
+                                      helperStyle: const TextStyle(fontSize: 11, color: Colors.red),
                                     ),
+                                    onChanged: (_) => setState(() {
+                                      _quizErrors[qIdx]?.remove('question_$qstIdx');
+                                    }),
                                   ),
                                   const SizedBox(height: 12),
                                   
@@ -746,7 +1024,12 @@ class _CourseEditorBottomSheetState extends State<CourseEditorBottomSheet> {
                                                 hintText: 'Option ${optIdx + 1}',
                                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                helperText: _quizErrors[qIdx]?['option_${qstIdx}_$optIdx'],
+                                                helperStyle: const TextStyle(fontSize: 11, color: Colors.red),
                                               ),
+                                              onChanged: (_) => setState(() {
+                                                _quizErrors[qIdx]?.remove('option_${qstIdx}_$optIdx');
+                                              }),
                                             ),
                                           ),
                                           const SizedBox(width: 8),

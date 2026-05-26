@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'dart:io';
+import 'package:dio/dio.dart' as dio_pkg;
+import 'package:http_parser/http_parser.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../models/course.dart';
 import '../../models/instructor_profile.dart';
+import '../../models/user_role.dart';
 import '../../models/notification_model.dart';
 import '../../services/instructor_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/api_client.dart';
 import '../../utils/app_theme.dart';
-import '../../widgets/app_navbar.dart';
-import '../../widgets/app_drawer.dart';
 import '../../providers/notification_provider.dart';
-import '../../widgets/course_editor_bottom_sheet.dart';
 import '../../widgets/course_details_bottom_sheet.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:http_parser/http_parser.dart';
-import 'package:dio/dio.dart' as dio_pkg;
+import '../../widgets/course_editor_bottom_sheet.dart';
 
 class InstructorHomeScreen extends StatefulWidget {
   final TabController? tabController;
@@ -121,6 +119,43 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
 
     if (_error != null) {
       return _buildError();
+    }
+
+    // Debug: Check user authentication status
+    final authProvider = context.watch<AuthProvider>();
+    print('>>> Instructor Home: User role: ${authProvider.role}');
+    print('>>> Instructor Home: User authenticated: ${authProvider.isAuthenticated}');
+    print('>>> Instructor Home: User ID: ${authProvider.userId}');
+
+    if (authProvider.role != UserRole.instructor) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 56, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Access Denied: You are logged in as ${authProvider.role?.value ?? "unknown"}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This screen is only available to instructors. Please log out and log in with an instructor account.',
+                style: TextStyle(fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => authProvider.logout(),
+                child: const Text('Log Out'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(
@@ -499,6 +534,8 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
                   onTap: () {
                     if (isDraft) {
                       _showAddCourseDialog(editCourse: course);
+                    } else {
+                      context.push('/instructor/course/${course.courseId}');
                     }
                   },
                 );
@@ -519,172 +556,172 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
       onTap: onTap,
       child: Container(
         width: 220,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGold.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: AppTheme.paleGold),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Thumbnail
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: thumbUrl != null
-                    ? Image.network(
-                        thumbUrl,
-                        height: 100,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _courseThumbnailPlaceholder(),
-                      )
-                    : _courseThumbnailPlaceholder(),
-              ),
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.35),
-                    shape: BoxShape.circle,
-                  ),
-                  child: PopupMenuButton<String>(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(
-                      Icons.more_vert_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _showAddCourseDialog(editCourse: course);
-                      } else if (value == 'archive') {
-                        _confirmArchiveCourse(course);
-                      } else if (value == 'delete') {
-                        _confirmDeleteDraft(course);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 18, color: AppTheme.textPrimary),
-                            SizedBox(width: 8),
-                            Text('Edit / View'),
-                          ],
-                        ),
-                      ),
-                      if (course.status == 'DRAFT')
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                              SizedBox(width: 8),
-                              Text('Delete Draft', style: TextStyle(color: Colors.redAccent)),
-                            ],
-                          ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryGold.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: AppTheme.paleGold),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: thumbUrl != null
+                      ? Image.network(
+                          thumbUrl,
+                          height: 100,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _courseThumbnailPlaceholder(),
                         )
-                      else
+                      : _courseThumbnailPlaceholder(),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showAddCourseDialog(editCourse: course);
+                        } else if (value == 'archive') {
+                          _confirmArchiveCourse(course);
+                        } else if (value == 'delete') {
+                          _confirmDeleteDraft(course);
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
-                          value: 'archive',
+                          value: 'edit',
                           child: Row(
                             children: [
-                              Icon(Icons.archive_outlined, size: 18, color: Colors.redAccent),
+                              Icon(Icons.edit_outlined, size: 18, color: AppTheme.textPrimary),
                               SizedBox(width: 8),
-                              Text('Archive', style: TextStyle(color: Colors.redAccent)),
+                              Text('Edit'),
                             ],
                           ),
                         ),
-                    ],
+                        if (course.status == 'DRAFT')
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                                SizedBox(width: 8),
+                                Text('Delete Draft', style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          )
+                        else
+                          const PopupMenuItem<String>(
+                            value: 'archive',
+                            child: Row(
+                              children: [
+                                Icon(Icons.archive_outlined, size: 18, color: Colors.redAccent),
+                                SizedBox(width: 8),
+                                Text('Archive', style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          // Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    course.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppTheme.textPrimary,
+            // Content — padding reduced from 10→8 top/bottom to prevent 2px overflow
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      course.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: AppTheme.textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      _chip(
-                        course.level ?? 'N/A',
-                        AppTheme.primaryGold.withValues(alpha: 0.12),
-                        AppTheme.primaryGold,
-                      ),
-                      const SizedBox(width: 5),
-                      _chip(
-                        course.isFree
-                            ? 'Free'
-                            : '\$${course.price?.toStringAsFixed(0)}',
-                        AppTheme.paleGold,
-                        AppTheme.darkGold,
-                      ),
-                    ],
-                  ),
-                  if (showEnrollments) ...[
-                    const SizedBox(height: 6),
+                    const Spacer(),
                     Row(
                       children: [
-                        const Icon(Icons.people_outline,
-                            size: 13, color: AppTheme.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$enrollments enrolled',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
+                        _chip(
+                          course.level ?? 'N/A',
+                          AppTheme.primaryGold.withValues(alpha: 0.12),
+                          AppTheme.primaryGold,
                         ),
-                        const Spacer(),
-                        const Icon(Icons.play_circle_outline,
-                            size: 13, color: AppTheme.textSecondary),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${course.lessonCount}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
+                        const SizedBox(width: 5),
+                        _chip(
+                          course.isFree
+                              ? 'Free'
+                              : '\$${course.price?.toStringAsFixed(0)}',
+                          AppTheme.paleGold,
+                          AppTheme.darkGold,
                         ),
                       ],
                     ),
+                    if (showEnrollments) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.people_outline,
+                              size: 13, color: AppTheme.textSecondary),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$enrollments enrolled',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.play_circle_outline,
+                              size: 13, color: AppTheme.textSecondary),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${course.lessonCount}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-            ],
-          ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-      ],
-      ),
       ),
     );
   }
@@ -819,6 +856,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         builder: (context) => CourseEditorBottomSheet(
           categories: _categories,
           onSaved: _loadAll,
+          instructorSpecialization: _profile?.specialization,
         ),
       );
     }
@@ -1053,4 +1091,3 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         ),
       );
 }
-
