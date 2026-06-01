@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!-- Background soft circle -->
+  <circle cx="250" cy="250" r="220" fill="#fdfaf5" opacity="0.5"/>
+  <circle cx="250" cy="250" r="200" fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.1"/>
+
+  <!-- Flowing dance lines -->
+  <path d="M 50,400 C 150,350 250,450 450,350" fill="none" stroke="#c9a95c" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
+  <path d="M 80,420 C 180,370 280,470 420,380" fill="none" stroke="#b89c4d" stroke-width="1" opacity="0.15" stroke-linecap="round"/>
+
+  <!-- Botanical Accents (Left) -->
+  <g transform="translate(80, 380) rotate(-45)">
+    <path d="M 0,0 C 20,-40 50,-60 80,-70" fill="none" stroke="#b89c4d" stroke-width="1.5" opacity="0.4"/>
+    <path d="M 30,-35 C 20,-55 10,-65 15,-70 C 25,-65 35,-50 30,-35 Z" fill="#c9a95c" opacity="0.4"/>
+    <path d="M 50,-50 C 60,-70 75,-80 80,-75 C 75,-65 65,-55 50,-50 Z" fill="#b89c4d" opacity="0.3"/>
+  </g>
+
+  <!-- Botanical Accents (Right) -->
+  <g transform="translate(420, 120) rotate(135)">
+    <path d="M 0,0 C 20,-40 50,-60 80,-70" fill="none" stroke="#b89c4d" stroke-width="1.5" opacity="0.4"/>
+    <path d="M 30,-35 C 20,-55 10,-65 15,-70 C 25,-65 35,-50 30,-35 Z" fill="#c9a95c" opacity="0.4"/>
+    <path d="M 50,-50 C 60,-70 75,-80 80,-75 C 75,-65 65,-55 50,-50 Z" fill="#b89c4d" opacity="0.3"/>
+  </g>
+
+  <!-- Quiz/Knowledge Element -->
+  <rect x="160" y="140" width="180" height="220" rx="15" fill="#fff" stroke="#e8e4d8" stroke-width="2" />
+
+  <!-- Header of the quiz card -->
+  <rect x="180" y="170" width="100" height="8" rx="4" fill="#b89c4d" opacity="0.2"/>
+  <rect x="180" y="185" width="60" height="6" rx="3" fill="#b89c4d" opacity="0.1"/>
+
+  <!-- Question 1 -->
+  <circle cx="190" cy="225" r="10" fill="none" stroke="#b89c4d" stroke-width="1.5" opacity="0.6"/>
+  <rect x="210" y="220" width="100" height="4" rx="2" fill="#d0ccc4" opacity="0.5"/>
+  <rect x="210" y="230" width="70" height="4" rx="2" fill="#d0ccc4" opacity="0.3"/>
+
+  <!-- Question 2 (Active/Selected) -->
+  <circle cx="190" cy="275" r="10" fill="#b89c4d" opacity="0.8"/>
+  <path d="M 186,275 L 189,278 L 194,272" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="210" y="270" width="100" height="4" rx="2" fill="#b89c4d" opacity="0.6"/>
+  <rect x="210" y="280" width="85" height="4" rx="2" fill="#b89c4d" opacity="0.4"/>
+
+  <!-- Question 3 -->
+  <circle cx="190" cy="325" r="10" fill="none" stroke="#b89c4d" stroke-width="1.5" opacity="0.6"/>
+  <rect x="210" y="320" width="100" height="4" rx="2" fill="#d0ccc4" opacity="0.5"/>
+  <rect x="210" y="330" width="50" height="4" rx="2" fill="#d0ccc4" opacity="0.3"/>
+
+  <!-- Floating Sparkles / Progress -->
+  <path d="M 360,180 L 365,170 L 370,180 L 380,185 L 370,190 L 365,200 L 360,190 L 350,185 Z" fill="#c9a95c" opacity="0.6"/>
+  <circle cx="340" cy="160" r="3" fill="#b89c4d" opacity="0.4"/>
+  <circle cx="380" cy="210" r="2" fill="#b89c4d" opacity="0.3"/>
+
+  <!-- Wellness Symbol (Abstract Leaf/Drop) -->
+  <path d="M 250,100 C 270,100 280,120 280,140 C 280,160 250,180 250,180 C 250,180 220,160 220,140 C 220,120 230,100 250,100 Z" fill="#b89c4d" opacity="0.15"/>
+</svg>
